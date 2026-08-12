@@ -17,7 +17,7 @@ description: >-
 
 1. **Đọc skill `ios-architecture`** nếu chưa. Bảng "file này đặt ở đâu" là thứ
    bạn sẽ cần ở mọi bước.
-2. **Mở `FeatureOrder/OrderList/` ra soi.** Nó là bản mẫu đã build, test và chạy
+2. **Mở `Features/Order/OrderList/` ra soi.** Nó là bản mẫu đã build, test và chạy
    được. Bắt chước nó; đừng phát minh biến thể.
 3. **Có spec chưa?** Không có thì viết `docs/features/<tên>.md` theo
    `assets/feature-spec.md`, xác nhận với người dùng, rồi mới code. Spec sai thì
@@ -32,7 +32,7 @@ hiện API thiếu field khi UI đã xong.
 
 | # | Bước | Ở đâu | Ghi chú |
 |---|---|---|---|
-| 1 | Route | `Feature<X>/<X>Route.swift` | **chỉ khi** cần addressable — xem dưới |
+| 1 | Route | `Features/<X>/<X>Route.swift` | **chỉ khi** cần addressable — xem dưới |
 | 2 | Entity | `Domain/Entities/` | + fixture trong `Fixtures.swift` |
 | 3 | Repository protocol | `Domain/Repositories/` | mô tả *cái gì*, không nói *bằng gì* |
 | 4 | Use case | `Domain/UseCases/` | **chỉ khi có logic thật**, xem dưới |
@@ -40,9 +40,9 @@ hiện API thiếu field khi UI đã xong.
 | 6 | Endpoint | `Data/Network/Endpoints/` | khai `cachePolicy` có ý thức |
 | 7 | Repository impl | `Data/Repositories/` | map lỗi qua `perform(_:_:)` |
 | 8 | Stub | `Data/Testing/Stubs.swift` | để làm `testValue` |
-| 9 | DI key | `AppDI/Dependencies+*.swift` | **kèm `testValue`** |
-| 10 | ViewModel | `Feature<X>/<Screen>/` | `State` + `Action` + `send`, `import KVRouterCore` |
-| 11 | View + view con | `Feature<X>/<Screen>/` | con nhận value + closure, `Equatable` |
+| 9 | DI key | `DI/Dependencies+*.swift` | **kèm `testValue`** |
+| 10 | ViewModel | `Features/<X>/<Screen>/` | `State` + `Action` + `send`, `import KVRouterCore` |
+| 11 | View + view con | `Features/<X>/<Screen>/` | con nhận value + closure, `Equatable` |
 | 12 | Register route | `App/Navigation/AppRoutes.swift` | quên = màn trắng + assert ở debug |
 
 Bước 12 là chỗ compiler giúp bạn: thêm case vào enum route mà quên nhánh trong
@@ -88,7 +88,7 @@ Chạy skill `ios-verify`: build + test + `check-arch.sh`, rồi chạy app th�
 
 ## Dấu hiệu đang đi sai — dừng lại
 
-- `import Data` trong file dưới `Feature*/`
+- `import Data` trong file dưới `Features/`
 - File ViewModel có `import KVRouterKit`, hoặc gọi `pushView`
 - ViewModel có `URL`, `JSONDecoder`, `KVAPIClientError`
 - View con nhận `ViewModel` thay vì value

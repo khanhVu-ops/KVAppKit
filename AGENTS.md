@@ -14,27 +14,43 @@ do not duplicate architecture detail there or the two will drift.
 | UI | SwiftUI, iOS 16+ |
 | State | `ObservableObject` + one `State` struct + `send(_ action:)` |
 | Navigation | KVRouterKit 3.1 (`KVRouting` port for ViewModels) |
-| DI | KVDIKit (keys declared only in `AppDI`) |
+| DI | KVDIKit (keys declared only in `DI/`) |
 | Networking | KVNetworkit 2.x (lives in `Data`, errors mapped at that boundary) |
 | Logging | KVLoggingKit (privacy-declared metadata) |
 | Toast | KVToastKit behind the `ToastService` port |
 | Project files | XcodeGen (`project.yml`) — never edit `.xcodeproj` by hand |
 | Language mode | Swift 6, `SWIFT_STRICT_CONCURRENCY: complete` |
 
-## 2 · Module graph
+## 2 · Folder layout
 
-The graph in `Packages/AppModules/Package.swift` **is** the architecture. A layer
-cannot import what its target does not depend on, so a mistake is a build error.
+One app target, layered by folder. There is no SPM package: the layering is
+enforced by `tools/check-arch.sh` instead of by the compiler, because files in
+the same module see each other with no `import` line to check.
 
 ```
-AppFoundation   Foundation only            Loadable · AlertState · AppError · AppEnvironment
-Domain          → AppFoundation            Entities · Repository protocols · UseCases · ports
-Data            → Domain + KVNetworkit     DTO · Endpoints · Repository impls · mapping
-AppDI           → Domain + Data + KVDIKit  every dependency key, and nowhere else
-DesignSystem    → AppFoundation + KVToast  tokens · components · toast style
-Feature*        → Domain + DesignSystem + AppDI + KVRouter{Core,Kit}
-App             → everything               composition root only
+Core/           Loadable · AlertState · AppError · AppEnvironment      (Foundation only)
+Domain/         Entities · Repositories (protocol) · Services (ports) · UseCases
+Data/           DTO · Endpoints · Interceptors · Mapping · Local · Repositories · Testing
+DI/             every KVDependencyKey, and nowhere else
+DesignSystem/   Foundation (tokens) · Components · Modifiers · Toast
+Features/       Auth/ · Order/            one folder per flow, not per screen
+App/            entry · Navigation · Bootstrap · Session · Resources
+Tests/          DomainTests · DataTests · FeatureTests
+tools/          check-arch.sh · check-arch-selftest.sh · verify.sh
 ```
+
+Dependency direction runs Core → Domain → Data → DI → DesignSystem → Features →
+App. Nothing points back up.
+
+Because the compiler no longer stops a violation, two things matter more here
+than they would in a multi-module setup:
+
+- `check-arch.sh` derives its rules from the source (it reads the type names
+  declared under `Data/` and looks for them elsewhere), so it keeps working as
+  the code grows without a hand-maintained list.
+- `check-arch-selftest.sh` proves each rule still catches a real violation. A
+  rule that quietly stops matching is worse than no rule, because the green tick
+  then certifies the opposite of what it claims.
 
 ## 3 · The four rules that are not negotiable
 

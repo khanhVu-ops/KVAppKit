@@ -1,17 +1,26 @@
 # Từng tầng
 
-Graph trong `Packages/AppModules/Package.swift` **là** kiến trúc — một tầng không
-import được cái mà target của nó không depend, nên sai là build error.
+Không có SPM package: tất cả là folder trong một app target. Nghĩa là **compiler
+không chặn** một vi phạm phân tầng — file cùng module thấy nhau không cần
+`import`. `tools/check-arch.sh` là thứ thay thế, và nó suy luật từ chính source:
+đọc tên type khai báo dưới `Data/` rồi tìm chúng ở nơi không được biết.
 
-## AppFoundation — Foundation, không gì khác
+`DesignSystem/Modifiers/` giữ modifier dùng chung (`onFirstAppear`,
+`alert(_:onDismiss:)`, `cardStyle`, `dismissKeyboardOnTap`);
+`DesignSystem/Components/` giữ view chung (`LoadableContent`, `LoadingView`,
+`EmptyStateView`, `ErrorStateView`, `PrimaryButtonStyle`). Trước khi viết một
+view hay modifier mới, soi hai folder này — `LoadableContent` ra đời vì cùng một
+`switch` trên `Loadable` đã bị chép hai lần.
+
+## Core/ — Foundation, không gì khác
 
 `Loadable` · `AlertState` · `AppError` · `AppEnvironment`
 
 `AppError` ở đây chứ không ở `Domain` vì mọi tầng đều nói nó (`Data` sinh ra,
 `Domain` truyền đi, feature render) và `Loadable` cần nó. Đặt ở `Domain` thì
-`AppFoundation` phải depend `Domain` — đảo graph vì một enum.
+`Core` phải depend `Domain` — đảo graph vì một enum.
 
-## Domain — thuần Swift
+## Domain/ — thuần Swift
 
 `Entities/` · `Repositories/` (protocol) · `UseCases/` · `Services/` (port) ·
 `Errors/`
@@ -26,7 +35,7 @@ là nghi lễ; để ViewModel gọi repository trực tiếp.
 `Entities/Fixtures.swift` ở đây vì fixture của một entity là phần vocabulary của
 entity đó, và feature (vốn bị cấm import `Data`) cần nó cho preview và test.
 
-## Data — biên giới của KVNetworkit
+## Data/ — biên giới của KVNetworkit
 
 `DTO/` · `Network/Endpoints/` · `Network/Interceptors/` · `Mapping/` · `Local/` ·
 `Repositories/` · `Testing/`
@@ -39,13 +48,13 @@ default thay vì để `nil` lọt lên trên.
 thể serve bản ấm một phút, nhưng kết quả huỷ đơn thì không bao giờ được từ cache.
 
 Stub ở `Testing/` chứ không ở test target, vì `KVDependencyKey.testValue` phải
-gọi tên được chúng và khai báo đó nằm ở `AppDI` — cái sẽ ship.
+gọi tên được chúng và khai báo đó nằm ở `DI` — cái sẽ ship.
 
-## AppDI — nơi duy nhất khai key
+## DI/ — nơi duy nhất khai key
 
 Xem `references/di.md`.
 
-## DesignSystem
+## DesignSystem/
 
 `Foundation/` (AppColor, AppFont, Spacing, Radius) · `Components/` · `Toast/`
 
@@ -66,7 +75,7 @@ dùng `pushView`; xuyên luồng dùng route. Xem `references/navigation.md`.
 
 File ViewModel chỉ `import KVRouterCore`; file View mới được `import KVRouterKit`.
 
-## App — chỉ đi dây
+## App/ — chỉ đi dây
 
 `MyApp.swift` (composition root) · `Navigation/AppRoutes.swift` ·
 `Navigation/Middlewares/` · `Bootstrap/` · `Session/`

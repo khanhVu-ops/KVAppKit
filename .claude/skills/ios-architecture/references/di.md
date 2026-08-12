@@ -1,6 +1,6 @@
 # DI với KVDIKit
 
-## Key chỉ ở `AppDI`
+## Key chỉ ở `DI`
 
 Feature *đọc* key; chỉ composition root *ghi*. Đó là thứ ngăn một feature với
 tay vào `Data` lấy type cụ thể.
@@ -38,7 +38,7 @@ KVDependencies.prepare {
 ```
 
 Placeholder **assert** thay vì im lặng: một lệnh điều hướng âm thầm không làm gì
-là bug khó nhất trong khu vực này. Xem `AppDI/UnhostedRouter.swift`.
+là bug khó nhất trong khu vực này. Xem `DI/UnhostedRouter.swift`.
 
 ## ViewModel: hai init
 

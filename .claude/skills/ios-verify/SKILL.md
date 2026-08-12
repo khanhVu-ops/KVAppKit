@@ -23,15 +23,18 @@ Nó chạy `check-arch.sh` → build → test, và fail sớm ở bước đầu
 Chạy riêng khi cần khoanh vùng:
 
 ```bash
-./tools/check-arch.sh
-xcodegen generate                                   # sau khi thêm/di chuyển file
-xcodebuild -quiet -scheme AppModules-Package \
-  -destination 'generic/platform=iOS' build          # chỉ module, nhanh nhất
+./tools/check-arch.sh              # luật phân tầng
+./tools/check-arch-selftest.sh     # chứng minh các luật đó vẫn bắt được vi phạm
+xcodegen generate                  # sau khi thêm hoặc di chuyển BẤT KỲ file nào
 ```
 
-`xcodegen generate` là bước hay bị quên: file mới thêm vào `App/` sẽ không có
-trong project cho tới khi generate lại. Module trong `Packages/AppModules` thì
-không cần, SPM tự thấy.
+`xcodegen generate` là bước hay bị quên nhất, và ở layout một target thì nó quan
+trọng hơn: **mọi** file mới, ở bất kỳ folder nào, đều không có trong project cho
+tới khi generate lại. Triệu chứng là "code có đó mà compiler bảo không tìm thấy".
+
+`check-arch-selftest.sh` đáng chạy mỗi khi `check-arch.sh` đổi. Một luật im lặng
+ngừng khớp còn tệ hơn không có luật, vì dấu tick xanh lúc đó chứng nhận điều
+ngược lại.
 
 ## Rồi phải chạy thật
 
@@ -56,9 +59,9 @@ iPhone 17 Pro trả về ~918×1900 px nhưng không gian toạ độ là 402×8
 ## Chạy test một suite
 
 ```bash
-xcodebuild -scheme AppModules-Package \
+xcodebuild -project MyApp.xcodeproj -scheme MyApp \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  -only-testing:FeatureOrderTests test
+  -only-testing:MyAppTests/OrderListViewModelTests test
 ```
 
 ## Đọc kết quả cho đúng

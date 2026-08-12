@@ -91,7 +91,7 @@ timer nào phải quản.
 .onChange(of: isFocused) { if !$0 { commit() } }   // rời field không phải chờ debounce
 ```
 
-Xem bản đầy đủ ở `FeatureAuth/SignIn/SignInView.swift` → `DebouncedField`.
+Xem bản đầy đủ ở `Features/Auth/SignIn/SignInView.swift` → `DebouncedField`.
 
 ## Lên iOS 17 — diff theo file, không đụng kiến trúc
 

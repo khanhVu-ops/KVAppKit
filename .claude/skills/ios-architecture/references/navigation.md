@@ -40,13 +40,13 @@ import module chứa view đó — trong cùng module thì miễn phí, xuyên m
 bạn vừa tạo một cạnh phụ thuộc, và đúng chỗ đó mới đáng trả phí indirection.
 
 Hệ quả: định nghĩa "feature module" = **một luồng**, không phải một màn.
-`FeatureOrder` chứa list + detail + filter. App 6 module thực tế ra ~10 route,
+`Features/Order` chứa list + detail + filter. App 6 module thực tế ra ~10 route,
 không phải 40.
 
 ## Route sống trong feature module
 
 ```swift
-// FeatureOrder/OrderRoute.swift — không import SwiftUI
+// Features/Order/OrderRoute.swift — không import SwiftUI
 import KVRouterCore
 public enum OrderRoute: KVRestorableRoute {
     case detail(id: String)
@@ -71,7 +71,7 @@ Mapping route → view chỉ ở một chỗ, `App/Navigation/AppRoutes.swift`:
 ```
 
 Mỗi feature đăng ký route type của mình → **không có file trung tâm nào mà cả
-team phải sửa**, và `FeatureOrder` không cần biết `FeatureAuth` tồn tại.
+team phải sửa**, và `Features/Order` không cần biết `Features/Auth` tồn tại.
 
 ⚠️ `kvRoutes` chạy `configure` **một lần**. Destination không được capture state
 thay đổi được — cái này compile ngon và sai âm thầm:

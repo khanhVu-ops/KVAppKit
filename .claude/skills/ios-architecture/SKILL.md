@@ -2,7 +2,7 @@
 name: ios-architecture
 description: >-
   Kiến trúc chuẩn của app iOS SwiftUI này (MVVM + Clean Architecture, iOS 16+,
-  Swift 6): phân lớp AppFoundation/Domain/Data/AppDI/DesignSystem/Feature*, luật
+  Swift 6): phân lớp Core/Domain/Data/DI/DesignSystem/Feature*, luật
   import, State + Action + send(), map lỗi về AppError, DI bằng KVDIKit, và các
   luật riêng cho iOS 16. Đọc skill này TRƯỚC KHI tạo hoặc sửa bất kỳ file Swift
   nào trong repo — kể cả việc nghe rất nhỏ như "thêm một hàm", "sửa ViewModel
@@ -14,7 +14,7 @@ description: >-
 # Kiến trúc iOS — SwiftUI + MVVM + Clean Architecture
 
 Nguyên tắc số một: **bắt chước màn hàng xóm, không phát minh.** Mở
-`FeatureOrder/OrderList/` ra soi trước khi viết — nó là bản mẫu đã build và test
+`Features/Order/OrderList/` ra soi trước khi viết — nó là bản mẫu đã build và test
 được. Skill này mô tả *vì sao*; repo thật mới là *cái gì*.
 
 ## Quyết định nhanh: file này đặt ở đâu?
@@ -23,10 +23,10 @@ Nguyên tắc số một: **bắt chước màn hàng xóm, không phát minh.**
 
 | Câu hỏi | Nếu có → |
 |---|---|
-| Là vocabulary chung, không phụ thuộc gì? (`Loadable`, `AppError`, `AlertState`) | `AppFoundation/` |
+| Là vocabulary chung, không phụ thuộc gì? (`Loadable`, `AppError`, `AlertState`) | `Core/` |
 | Là khái niệm nghiệp vụ, không biết HTTP/JSON/SwiftUI? (entity, protocol repository, use case, port) | `Domain/` |
 | Có biết wire format, endpoint, keychain, cache? (DTO, endpoint, repository impl, interceptor) | `Data/` |
-| Là khai báo dependency key? | `AppDI/` (nơi **duy nhất**) |
+| Là khai báo dependency key? | `DI/` (nơi **duy nhất**) |
 | Là màu/font/spacing/component tái dùng? | `DesignSystem/` |
 | Là màn hình hoặc state của màn hình? | `Feature<Tên>/` |
 | Là dây nối mọi thứ lại — `@main`, `.kvRoutes`, middleware, bootstrap, session? | `App/` |
@@ -59,7 +59,7 @@ Nếu một luật thật sự sai với việc bạn đang làm, nói ra và đ
 
 ## Dấu hiệu đang đi sai — dừng lại nếu thấy
 
-- `import Data` trong file dưới `Feature*/`
+- `import Data` trong file dưới `Features/`
 - ViewModel có `URL`, `JSONDecoder`, `KVAPIClientError`, hoặc `import KVRouterKit`
 - View con nhận `@ObservedObject var viewModel:`
 - `Color(red:...)` hoặc hex literal ngoài `DesignSystem`
