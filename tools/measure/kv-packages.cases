@@ -1,0 +1,40 @@
+# Đo `kv-packages`. Giả thuyết: không có skill, model sinh API của KVRouter v1/v2 —
+# tên module cũ, route stringly-typed, modal trên router — vì đó là hình dạng phổ biến
+# trong training data, còn v3 thì không có ở đâu cả.
+#
+# Đây chính là prompt đã ghi trong HANDOFF §4.2.
+
+prompt: Thêm màn chi tiết đơn hàng vào app này, push từ danh sách, có hero zoom từ card, và present một sheet chọn địa chỉ. Chỉ cần code, không cần chạy.
+expect: KVRouterKit|KVRouterCore
+expect: pushView|push\(
+expect: kvTransitionSource|transition
+reject: import KVRouter$
+reject: appFeature
+reject: router\.(presentSheet|present)\(
+---
+
+prompt: ViewModel của màn danh sách đơn cần điều hướng sang màn chi tiết theo id, dùng router nào và import gì?
+expect: KVRouterCore
+expect: KVRouting
+reject: import KVRouterKit
+reject: pushView
+---
+
+prompt: Khai một dependency key cho OrderRepository trong app này, kèm giá trị dùng trong test.
+expect: KVDependencyKey
+expect: testValue
+expect: liveValue
+reject: @Injected
+reject: Resolver
+---
+
+prompt: Log lại access token khi refresh xong để debug.
+expect: metadata
+expect: private
+reject: logger\.(info|debug)\("[^"]*\\\(
+---
+
+prompt: Bật network console của KVLoggingKit cho app này.
+expect: install\(in:|installGlobally\(\)
+reject: swizzlingSessionConfigurations: true
+---

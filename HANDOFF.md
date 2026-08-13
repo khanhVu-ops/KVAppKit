@@ -201,21 +201,39 @@ phải lệnh tưởng tượng; `ios-endpoint` lấy đúng API của `KVMockNe
 - `ios-l10n` — nếu chốt string catalog. Hiện base hardcode chuỗi tiếng Việt trong
   `Text("Huỷ đơn hàng")` và không luật nào chặn, nên nó sẽ nhân lên 40 màn.
 
-### 4.2 Skill chưa được nghiệm thu lần nào
+### 4.2 Skill vẫn chưa được nghiệm thu — nhưng giờ có cân
 
-Đây là lỗ hổng lớn nhất. Quy trình đã thiết kế nhưng **chưa chạy**: cùng một
-prompt chạy hai lần, một lần có skill một lần không, rồi assert bằng grep.
+Vẫn là lỗ hổng lớn nhất, và nói cho chính xác: **cân đã có, chưa cân lần nào.**
 
-Ví dụ prompt đo `kv-packages`:
+`tools/measure-skill.sh` chạy cùng một prompt hai lần trên cùng một repo app — một
+lần bình thường, một lần với `--settings '{"skillOverrides":{"<skill>":"off"}}'` —
+rồi assert bằng regex `expect:`/`reject:`. Case nằm ở `tools/measure/*.cases`: đã
+viết 5 case cho `kv-packages` (gồm đúng prompt hero-zoom ghi ở đây trước đây) và 5
+cho `ios-architecture`, cố tình chọn những câu nghe *nhỏ* — "thêm một field", "tách
+row ra view con" — vì đó là lúc người ta bỏ qua skill nhiều nhất.
 
-> "thêm màn chi tiết đơn hàng, push từ list, có hero zoom từ card, và present
-> sheet chọn địa chỉ"
+Ba kết quả, và chỉ một cái là tin tốt:
 
-Không skill: gần như chắc chắn sinh `import KVRouter` + `present(.appFeature(...))`.
-Có skill: phải ra `KVRouterKit` + `presentSheet { }` + `.kvTransitionSource(id:)`.
+| có skill | không skill | nghĩa là |
+|---|---|---|
+| PASS | FAIL | skill có tác dụng — đây là thứ cần chứng minh |
+| PASS | PASS | prompt không đo được gì, model tự đúng. Đổi prompt khó hơn hoặc bỏ |
+| FAIL | — | skill chưa nói đủ rõ. Sửa **skill**, đừng sửa case cho vừa |
 
-Bài học từ `check-arch-selftest`: tôi *tin* skill có tác dụng, chưa **chứng
-minh**. Đúng loại niềm tin đã sai một lần rồi.
+`tools/measure-selftest.sh` chứng minh cái cân phân biệt được đúng ba trường hợp đó,
+bằng một `claude` giả trả lời theo kịch bản. Không có nó thì một lỗi parse trong
+harness sẽ đọc y như "skill không có tác dụng" — kết luận sai đắt nhất có thể rút ra
+ở đây.
+
+**Chưa chạy thật** vì sandbox viết nó không có `claude` trên PATH. Chạy ở máy có CLI:
+
+```bash
+./tools/measure-selftest.sh                       # cân còn đúng không
+./tools/measure-skill.sh --all --in ../my-app     # rồi cân thật
+```
+
+`--in` phải là một repo **đã init-base** (có `.claude/skills` + `project.yml`): đo
+trong repo kit thì model không có cây source nào để bắt chước, và kết quả vô nghĩa.
 
 ### 4.3 Skill chưa được cài ở đâu
 

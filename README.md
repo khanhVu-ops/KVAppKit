@@ -79,6 +79,17 @@ config/                repository + version KVAppBase
 ./tools/doctor-selftest.sh # chứng minh 7 phép kiểm đó còn bắt được vi phạm
 ```
 
+## Đo skill có thật sự tác dụng
+
+```bash
+./tools/measure-selftest.sh                    # cái cân còn đúng không
+./tools/measure-skill.sh --all --in ../my-app  # cân thật, trên repo đã init-base
+```
+
+Cùng một prompt chạy hai lần — một lần có skill, một lần `skillOverrides: off` — rồi
+assert bằng regex. Cột đáng đọc là **"không skill"**: nó fail thì skill mới có việc.
+Cả hai cột pass nghĩa là prompt đó không chứng minh được gì. Xem `tools/measure/`.
+
 Mỗi phép kiểm ứng với một lỗi đã xảy ra thật: symlink rơi khỏi git, bản copy script
 lạc hậu trong skill, `name:` lệch tên folder, version trong doc lệch `project.yml`,
 doc trỏ vào file đã xoá, `init-base` chặn hook, doc quảng cáo skill không tồn tại.

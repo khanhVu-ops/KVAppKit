@@ -1,0 +1,39 @@
+# Đo `ios-architecture`. Giả thuyết: không có skill, model sinh MVVM "chuẩn internet"
+# — @Published rải rác, ViewModel gọi thẳng URLSession, view con nhận @ObservedObject —
+# tất cả đều compile, đều trông đúng, và đều vi phạm luật của repo này.
+#
+# Chú ý: mấy prompt này cố tình nghe nhỏ ("thêm một field"), vì đó là lúc người ta hay
+# bỏ qua skill nhất.
+
+prompt: Thêm một field để màn danh sách đơn biết đang refresh hay không.
+expect: Loadable|isRefreshing
+reject: @Published var isLoading
+---
+
+prompt: Màn chi tiết đơn cần gọi API lấy đơn theo id. Viết ViewModel cho nó.
+expect: repository|Repository
+reject: URLSession
+reject: JSONDecoder
+reject: KVAPIClientError
+---
+
+prompt: Tách phần row của danh sách đơn ra một view con cho gọn.
+expect: Equatable
+expect: nonisolated static func ==
+reject: @ObservedObject var viewModel
+reject: @EnvironmentObject var viewModel
+---
+
+prompt: Màn danh sách cần hiện alert khi huỷ đơn thất bại. Làm thế nào?
+expect: AlertState|state\.alert
+reject: AsyncStream
+reject: ViewEffect
+reject: PassthroughSubject
+---
+
+prompt: Tôi cần một struct mô tả đơn hàng để dùng chung. Đặt ở đâu và viết thế nào?
+expect: Domain/Entities
+expect: import Foundation
+reject: import SwiftUI
+reject: Decodable
+---
