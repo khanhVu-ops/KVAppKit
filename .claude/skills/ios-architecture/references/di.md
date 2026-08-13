@@ -38,7 +38,8 @@ KVDependencies.prepare {
 ```
 
 Placeholder **assert** thay vì im lặng: một lệnh điều hướng âm thầm không làm gì
-là bug khó nhất trong khu vực này. Xem `DI/UnhostedRouter.swift`.
+là bug khó nhất trong khu vực này. `KVUnhostedRouter` của KVRouterCore làm đúng
+việc đó — xem `DI/Dependencies+Infra.swift`.
 
 ## ViewModel: hai init
 

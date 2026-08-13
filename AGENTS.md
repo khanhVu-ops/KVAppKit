@@ -88,9 +88,16 @@ Each has a reason, and each is checked by `tools/check-arch.sh` in CI.
 xcodegen generate                    # after adding or moving files
 ./tools/check-arch.sh                # layering rules
 ./tools/verify.sh                    # build + test + arch, all three
+./tools/doctor.sh                    # rule and skill still describe this repo
 ```
 
 Never hand-edit `MyApp.xcodeproj`; it is generated and gitignored.
+
+A `PostToolUse` hook (`.claude/settings.json` → `tools/xcodegen-if-needed.sh`)
+regenerates the project when a **new** `.swift` file appears, and stays silent
+otherwise. It removes the most repeated trap of a single-target layout — a file that
+exists on disk and not in the project, which the compiler reports as "cannot find
+in scope". Moving or deleting files is still on you: run `xcodegen generate`.
 
 ## 6 · Skills
 

@@ -70,9 +70,14 @@ rm -rf "$tmp/base/.git"
 # README.md thì ngược lại: **lấy của base**. README của kit nói cách tạo project,
 # vô dụng trong repo đã tạo — mà luật 10 của check-arch.sh lại đọc README để so
 # với cây source, nên giữ README của kit là fail ngay ./tools/verify.sh đầu tiên.
+#
+# `.claude` không bị exclude cả cụm: kit sở hữu skill/agent/command, còn base sở
+# hữu `.claude/settings.json` (hook xcodegen). Cấm cả `.claude` thì hook không bao
+# giờ tới được repo app, mà copy hook sang kit là lại có hai bản để lệch nhau.
 rsync -a \
   --exclude 'AGENTS.md' --exclude 'CLAUDE.md' \
-  --exclude '.claude' --exclude '.agents' --exclude 'config' \
+  --exclude '.claude/skills' --exclude '.claude/agents' --exclude '.claude/commands' \
+  --exclude '.agents' --exclude 'config' \
   --exclude 'tools/init-base.sh' \
   "$tmp/base/" "$kit_root/"
 

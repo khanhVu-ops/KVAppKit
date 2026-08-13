@@ -63,8 +63,22 @@ CLAUDE.md              @AGENTS.md + trỏ skill
 .claude/commands/      slash command
 .claude/agents/        subagent profile
 tools/init-base.sh     script khởi tạo
+tools/doctor.sh        kiểm rule/skill còn nói đúng sự thật
 config/                repository + version KVAppBase
 ```
+
+## Kiểm sức khoẻ của kit
+
+```bash
+./tools/doctor.sh          # 7 phép kiểm; --against DIR nếu repo app nằm chỗ khác
+./tools/doctor-selftest.sh # chứng minh 7 phép kiểm đó còn bắt được vi phạm
+```
+
+Mỗi phép kiểm ứng với một lỗi đã xảy ra thật: symlink rơi khỏi git, bản copy script
+lạc hậu trong skill, `name:` lệch tên folder, version trong doc lệch `project.yml`,
+doc trỏ vào file đã xoá, `init-base` chặn hook, doc quảng cáo skill không tồn tại.
+Chạy nó sau mỗi lần sửa skill — drift ở đây dạy sai cả người lẫn agent trước khi họ
+kịp mở source ra xem.
 
 `.agents/skills` là **symlink**, không phải bản copy — sửa một chỗ, cả hai runtime
 thấy. Nếu nó thành directory thật thì symlink đã bị hỏng; restore nó thay vì

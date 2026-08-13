@@ -161,7 +161,18 @@ Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một lu�
 - **Version lệch**: `AGENTS.md`/`kv-packages` nói 3.1, bảng nói 3.2.0, project pin
   3.2.1. Đã đồng bộ. Và ⚠️ trong `kvrouterkit.md` về `KVUnhostedRouter.init()`
   chưa `nonisolated` là **sai từ 3.2.1** — nó đã `nonisolated`, base dùng thẳng,
-  còn `DI/UnhostedRouter.swift` mà reference dặn viết thì không tồn tại.
+  còn `DI/UnhostedRouter.swift` mà reference dặn viết thì không tồn tại (`di.md`
+  cũng trỏ vào file đó; doctor.sh tìm ra chỗ thứ hai này, tôi thì không).
+- **Hook `xcodegen`** (base: `tools/xcodegen-if-needed.sh` + `.claude/settings.json`):
+  `PostToolUse` trên Write|Edit, generate khi có file `.swift` **mới**, im lặng khi
+  chỉ sửa file cũ (kiểm bằng cách grep basename trong `project.pbxproj`). Bẫy số 1
+  và số 4 của bảng §3 giờ là hạ tầng, không còn là việc phải nhớ. `init-base` vì thế
+  chỉ exclude `.claude/{skills,agents,commands}` chứ không exclude cả `.claude`, để
+  hook đi được sang repo app mà không phải nhân bản sang kit.
+- **`tools/doctor.sh` + `doctor-selftest.sh`** (kit): 7 phép kiểm, mỗi cái ứng với
+  một lỗi đã xảy ra thật trong buổi này, và 8 probe chứng minh chúng còn bắt được.
+  Chạy ngay lần đầu là ra hai lỗi thật (`di.md` trỏ file đã xoá, version lệch) và
+  hai lỗi trong chính doctor. Từ giờ những drift ở §4.0 là việc của script.
 
 ### 4.1 Chín skill chưa viết
 
