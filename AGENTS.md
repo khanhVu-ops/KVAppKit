@@ -13,7 +13,7 @@ do not duplicate architecture detail there or the two will drift.
 |---|---|
 | UI | SwiftUI, iOS 16+ |
 | State | `ObservableObject` + one `State` struct + `send(_ action:)` |
-| Navigation | KVRouterKit 3.1 (`KVRouting` port for ViewModels) |
+| Navigation | KVRouterKit 3.2 (`KVRouting` port for ViewModels) |
 | DI | KVDIKit (keys declared only in `DI/`) |
 | Networking | KVNetworkit 2.x (lives in `Data`, errors mapped at that boundary) |
 | Logging | KVLoggingKit (privacy-declared metadata) |

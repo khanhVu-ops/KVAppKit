@@ -73,11 +73,11 @@ có nêu tên lệnh và route type. Hai lựa chọn hiển nhiên đều tệ 
 chưa host thì nuốt push vào một stack vô hình, còn no-op im lặng thì đọc như nút
 bấm hỏng.
 
-⚠️ **3.2.0: `init()` chưa `nonisolated`**, nên không gọi được từ
-`KVDependencyKey.liveValue` (một static nonisolated) — lỗi "main actor-isolated
-default value in a nonisolated context". Chính ví dụ trong doc của nó cũng dính.
-Tới khi upstream thêm `nonisolated`, app tự viết một class tương đương với
-`nonisolated init()`; xem `DI/UnhostedRouter.swift` trong base.
+`init()` là `nonisolated` từ **3.2.1** — và đó là điểm cả kiểu dùng này dựa vào:
+`KVDependencyKey.liveValue` là một `static` nonisolated, nên một init thừa hưởng
+`@MainActor` của class thì không gọi được ở đó ("main actor-isolated default value
+in a nonisolated context"). Trên 3.2.0 phải tự viết một class tương đương; từ
+3.2.1 dùng thẳng, xem `DI/Dependencies+Infra.swift` trong base.
 
 `KVRouterSpy` (KVRouterTesting) thì *ghi lại* lệnh thay vì phàn nàn — đó là test
 double, chỉ link vào test target.

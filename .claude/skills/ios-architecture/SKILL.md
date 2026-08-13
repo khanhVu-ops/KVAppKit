@@ -28,7 +28,7 @@ Nguyên tắc số một: **bắt chước màn hàng xóm, không phát minh.**
 | Có biết wire format, endpoint, keychain, cache? (DTO, endpoint, repository impl, interceptor) | `Data/` |
 | Là khai báo dependency key? | `DI/` (nơi **duy nhất**) |
 | Là màu/font/spacing/component tái dùng? | `DesignSystem/` |
-| Là màn hình hoặc state của màn hình? | `Feature<Tên>/` |
+| Là màn hình hoặc state của màn hình? | `Features/<Tên>/` |
 | Là dây nối mọi thứ lại — `@main`, `.kvRoutes`, middleware, bootstrap, session? | `App/` |
 
 Không chắc giữa `Domain` và `Data`: hỏi "cái này có đổi khi backend đổi field

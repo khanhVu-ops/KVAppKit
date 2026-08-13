@@ -1,6 +1,6 @@
 # Navigation
 
-KVRouterKit 3.1 cho hai đường. Chọn đường theo **ai biết đích đến**, không theo
+KVRouterKit 3.2 cho hai đường. Chọn đường theo **ai biết đích đến**, không theo
 sở thích.
 
 ## Hai đường

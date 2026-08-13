@@ -21,21 +21,21 @@ hoặc sửa **một màn hình**, đúng chuẩn nhà, không tự sáng chế 
    luật hiệu năng iOS 16.
 2. **Đọc skill `kv-packages`** nếu chạm bất kỳ symbol `KV*`. Đây là package
    riêng, không có trong training data — đoán là không compile.
-3. **Bắt chước màn hàng xóm.** Mở `FeatureOrder/OrderList/` ra soi cấu trúc file,
+3. **Bắt chước màn hàng xóm.** Mở `Features/Order/OrderList/` ra soi cấu trúc file,
    cách chia view con, cách xử lỗi, rồi viết theo đúng giọng đó.
-4. **Không tự chạy build lâu.** Được `xcodegen generate` và build module. Muốn
+4. **Không tự chạy build lâu.** Được `xcodegen generate` và `./tools/check-arch.sh`. Muốn
    chạy app trên simulator thì báo user hoặc dùng skill `ios-verify`.
 
 ## Bộ file cho một màn
 
 ```
-Feature<X>/<Screen>/
+Features/<X>/<Screen>/
 ├── <Screen>ViewModel.swift    State + Action + send, import KVRouterCore
 ├── <Screen>View.swift         @StateObject, chia view con
 └── <Screen>Rows.swift         view con nhận value + closure, Equatable
 ```
 
-Route (`Feature<X>/<X>Route.swift`) **chỉ** thêm khi màn cần addressable: deep
+Route (`Features/<X>/<X>Route.swift`) **chỉ** thêm khi màn cần addressable: deep
 link, notification, restoration, auth guard. Còn lại `router.pushView { }`.
 
 ## Ranh giới

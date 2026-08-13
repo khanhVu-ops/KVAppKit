@@ -36,6 +36,10 @@ tới khi generate lại. Triệu chứng là "code có đó mà compiler bảo 
 ngừng khớp còn tệ hơn không có luật, vì dấu tick xanh lúc đó chứng nhận điều
 ngược lại.
 
+Ba script này thuộc repo app (`tools/`), đến từ KVAppBase khi init. Skill **không**
+giữ bản copy nào — bản copy trước đó đã lạc hậu đúng hai luật (folder rỗng, README
+lệch đĩa) và không ai gọi tới nó. Cần sửa luật thì sửa trong `tools/`.
+
 ## Rồi phải chạy thật
 
 Test không chứng minh màn hình hiện ra đúng. Sau khi verify xanh:
@@ -46,9 +50,9 @@ Test không chứng minh màn hình hiện ra đúng. Sau khi verify xanh:
    ```bash
    xcodebuild -quiet -project MyApp.xcodeproj -scheme MyApp \
      -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-     -derivedDataPath /tmp/myapp-dd CODE_SIGNING_ALLOWED=NO build
+     -derivedDataPath /tmp/MyApp-dd CODE_SIGNING_ALLOWED=NO build
    ```
-3. `launch` với `app_path: /tmp/myapp-dd/Build/Products/Debug-iphonesimulator/MyApp.app`
+3. `launch` với `app_path: /tmp/MyApp-dd/Build/Products/Debug-iphonesimulator/MyApp.app`
 4. `screenshot`, rồi `tap`/`text` để đi tới đúng màn vừa sửa và screenshot lại.
 
 ⚠️ **Toạ độ `tap` là device point, không phải pixel của ảnh screenshot.** Ảnh
@@ -73,7 +77,8 @@ xcodebuild -project MyApp.xcodeproj -scheme MyApp \
 - Build fail ở `conformance ... crosses into main actor-isolated code` → `View +
   Equatable` cần `nonisolated static func ==`.
 - `Unable to find module dependency` cho một product `KV*` → thiếu khai trong
-  `project.yml` (target App) hoặc `Package.swift` (module).
+  `project.yml` — khai product đó ở `dependencies` của target app rồi
+  `xcodegen generate`.
 
 ## Báo cáo
 

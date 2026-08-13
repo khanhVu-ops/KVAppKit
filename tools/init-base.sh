@@ -66,22 +66,42 @@ resolved_sha="$(git -C "$tmp/base" rev-parse --short HEAD)"
 rm -rf "$tmp/base/.git"
 
 # Kit sở hữu rule và skill; template không được ghi đè chúng.
+#
+# README.md thì ngược lại: **lấy của base**. README của kit nói cách tạo project,
+# vô dụng trong repo đã tạo — mà luật 10 của check-arch.sh lại đọc README để so
+# với cây source, nên giữ README của kit là fail ngay ./tools/verify.sh đầu tiên.
 rsync -a \
-  --exclude 'AGENTS.md' --exclude 'CLAUDE.md' --exclude 'README.md' \
+  --exclude 'AGENTS.md' --exclude 'CLAUDE.md' \
   --exclude '.claude' --exclude '.agents' --exclude 'config' \
   --exclude 'tools/init-base.sh' \
   "$tmp/base/" "$kit_root/"
+
+# Base tự giới thiệu là template trong một khối có marker; repo mới thì không phải.
+perl -0pi -e 's/<!-- template-only:start -->.*?<!-- template-only:end -->\n\n?//s' "$kit_root/README.md"
+perl -pi -e "s/^# KVAppBase$/# $app_name/" "$kit_root/README.md"
 
 # Đổi danh tính. Tên module Swift phải là identifier hợp lệ.
 module_name="$(printf '%s' "$app_name" | perl -pe 's/[^A-Za-z0-9]//g')"
 [[ -n "$module_name" ]] || fail "--name phải chứa ít nhất một chữ hoặc số"
 
-find "$kit_root/App" "$kit_root/Packages" "$kit_root/project.yml" -type f \
-  \( -name '*.swift' -o -name '*.yml' -o -name '*.plist' \) -print0 2>/dev/null \
-  | xargs -0 perl -pi -e "s/\bMyApp\b/$module_name/g; s/\bcom\.example\.myapp\b/$bundle_id/g; s/\bcom\.example\b/${bundle_id%.*}/g"
+# Quét cả repo, không chỉ App/ + project.yml. Bản đầu chỉ đổi hai chỗ đó, nên
+# `@testable import MyApp` trong Tests/ ở lại và test target của repo mới không
+# compile. AGENTS.md và skill cũng nhắc `MyApp.xcodeproj` — rule mô tả sai cây
+# source là cách base project trước đó đã trôi.
+#
+# `\bMyApp` không có \b ở cuối là có ý: để `MyAppTests` thành `<Module>Tests`.
+find "$kit_root" \
+  \( -name '.git' -o -name '*.xcodeproj' \) -prune -o \
+  -type f \( -name '*.swift' -o -name '*.yml' -o -name '*.plist' -o -name '*.md' \) -print0 \
+  | xargs -0 perl -pi -e "s/\bMyApp/$module_name/g; s/\bcom\.example\.myapp\b/$bundle_id/g; s/\bcom\.example\b/${bundle_id%.*}/g"
 
 perl -pi -e "s/^name: .*/name: $module_name/" "$kit_root/project.yml"
-perl -pi -e "s|<string>MyApp</string>|<string>$app_name</string>|" "$kit_root/App/Resources/Info.plist" 2>/dev/null || true
+perl -pi -e "s|<string>$module_name</string>|<string>$app_name</string>|" "$kit_root/App/Resources/Info.plist"
+
+# File entry point mang tên struct; struct vừa đổi thì file phải đi theo.
+if [[ -f "$kit_root/App/MyApp.swift" ]]; then
+  mv "$kit_root/App/MyApp.swift" "$kit_root/App/$module_name.swift"
+fi
 
 command -v xcodegen >/dev/null && (cd "$kit_root" && xcodegen generate --quiet) \
   || echo "xcodegen chưa cài — chạy 'brew install xcodegen' rồi 'xcodegen generate'"

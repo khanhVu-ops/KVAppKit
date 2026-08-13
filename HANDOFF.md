@@ -42,14 +42,14 @@ Kiểm mọi thứ bằng một lệnh:
 cd /Users/khanhvu/personal/KVAppBase && ./tools/verify.sh
 ```
 
-Nó chạy: 10 luật kiến trúc → 10 self-test cho chính các luật đó → xcodegen →
+Nó chạy: 10 luật kiến trúc → 11 self-test cho chính các luật đó → xcodegen →
 build + 19 test. Trạng thái hiện tại: **tất cả xanh**.
 
 Đăng nhập trong Debug: **email hợp lệ bất kỳ + mật khẩu ≥ 6 ký tự**
 (`a@b.com` / `123456`). Debug dùng fixtures qua cờ `USES_STUB_BACKEND`; đặt `NO`
 trong `project.yml` ngay khi có API thật.
 
-### KVAppKit — 5/11 skill
+### KVAppKit — 5/14 skill
 
 | Có | Nội dung |
 |---|---|
@@ -130,7 +130,40 @@ Tất cả đều đã gặp thật trong quá trình dựng. Đừng gặp lạ
 
 ## 4. Còn phải làm
 
-### 4.1 Sáu skill chưa viết
+### 4.0 Vừa sửa trong buổi audit 13/08 (chưa commit)
+
+Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một luật đã học.
+
+- **`init-base.sh` chưa từng chạy được end-to-end.** Ba lỗi cùng lúc: repo mới giữ
+  README của *kit* (rsync exclude nó) nên luật 10 fail ngay `verify.sh` đầu tiên;
+  đổi tên chỉ quét `App/` + `project.yml` nên `@testable import MyApp` ở `Tests/`
+  ở lại và test target không compile; `\bMyApp\b` không khớp `MyAppTests` nên
+  target test giữ tên template. Giờ: README lấy của base (base có khối
+  `<!-- template-only -->` để cắt), quét cả repo kể cả `.md`, dùng `\bMyApp`, và
+  `App/MyApp.swift` được rename theo module. **Đã nghiệm thu thật**: init vào một
+  repo trống với base local → `verify.sh` xanh, build ra `DemoApp.app`.
+- **Luật 10 tính cả `.claude`, `.agents`, `config` là folder tầng** — đó là vì sao
+  repo mới fail. Giờ bỏ dot-dir + `tools`/`config`/`docs`.
+- **README của base nói "8 luật" khi đã có 10**, và luật 10 vẫn xanh xuyên qua đó
+  vì nó chỉ so danh sách folder. Đã sửa số, **và** thêm phép kiểm số luật vào
+  chính luật 10 (README hứa bao nhiêu phải bằng số luật script có), kèm probe
+  `10b` trong self-test. Cùng bài học của `check-arch-selftest`: kiểm một nửa câu
+  thì nửa còn lại được chứng nhận miễn phí.
+- **`verify.sh` đỏ giả** vì simulator chết trước khi test runner nối được
+  (`Early unexpected exit … signal kill`). Giờ `simctl bootstatus -b` trước, và
+  retry **đúng một lần, đúng chữ ký đó** — test fail thật không bao giờ được retry.
+- **Ba script trong `ios-verify/scripts/` là bản copy đã lạc hậu** đúng hai luật
+  (9, 10) và không ai gọi tới — skill vẫn trỏ `./tools/*.sh`. Đã xoá; SKILL.md nói
+  rõ vì sao không giữ copy.
+- **`KVAppBase` giờ có `CLAUDE.md` riêng** (trỏ sang kit). Trước đó sửa chính
+  template là chạy không rule nào — và drift đã xảy ra thật: subagent
+  `swiftui-screen` vẫn nói `FeatureOrder/OrderList/`, layout đã bỏ từ lâu.
+- **Version lệch**: `AGENTS.md`/`kv-packages` nói 3.1, bảng nói 3.2.0, project pin
+  3.2.1. Đã đồng bộ. Và ⚠️ trong `kvrouterkit.md` về `KVUnhostedRouter.init()`
+  chưa `nonisolated` là **sai từ 3.2.1** — nó đã `nonisolated`, base dùng thẳng,
+  còn `DI/UnhostedRouter.swift` mà reference dặn viết thì không tồn tại.
+
+### 4.1 Chín skill chưa viết
 
 **Bị chặn (2)** — cùng một câu hỏi chưa có lời đáp:
 
@@ -150,6 +183,19 @@ Tất cả đều đã gặp thật trong quá trình dựng. Đừng gặp lạ
 - `ios-review` — review diff theo `review-checklist.md` (dùng chung luật, không viết lại)
 - `project-overview` — quét repo thật rồi sinh `PROJECT_OVERVIEW.md`
 
+**Ba cái phát hiện trong buổi audit 13/08**, không bị chặn:
+
+- `ios-troubleshoot` — bảng cạm bẫy ở §3 hiện **chỉ** nằm trong file này, mà file
+  này không được `@import` và không phải skill. Grep chứng minh: `DerivedData`,
+  `log show --info --debug`, `-34018`, `contentShape`, `TEST_HOST` không xuất hiện
+  trong bất kỳ skill nào. Session mới không paste HANDOFF là mất sạch phần đắt
+  nhất — đây là skill đáng viết trước cả bốn cái trên.
+- `ios-project` — sửa `project.yml`: thêm configuration, Info.plist key,
+  entitlement, scheme, package. Hiện chỉ có một dòng `xcodegen generate` trong
+  `ios-verify`.
+- `ios-l10n` — nếu chốt string catalog. Hiện base hardcode chuỗi tiếng Việt trong
+  `Text("Huỷ đơn hàng")` và không luật nào chặn, nên nó sẽ nhân lên 40 màn.
+
 ### 4.2 Skill chưa được nghiệm thu lần nào
 
 Đây là lỗ hổng lớn nhất. Quy trình đã thiết kế nhưng **chưa chạy**: cùng một
@@ -168,8 +214,9 @@ minh**. Đúng loại niềm tin đã sai một lần rồi.
 
 ### 4.3 Skill chưa được cài ở đâu
 
-`~/.claude/skills/` trống, `KVAppBase` không có `.claude/`. Muốn nghiệm thu thì
-phải nạp trước:
+`~/.claude/skills/` trống. `KVAppBase` giờ có `CLAUDE.md` trỏ sang kit (13/08),
+nhưng vẫn không có `.claude/skills/` — nên trong repo template, skill phải được đọc
+thủ công theo đường dẫn, không tự load. Muốn nghiệm thu thì phải nạp trước:
 
 ```bash
 # tạm thời, để đo — symlink chứ không copy
