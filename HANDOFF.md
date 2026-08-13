@@ -130,7 +130,7 @@ Tất cả đều đã gặp thật trong quá trình dựng. Đừng gặp lạ
 
 ## 4. Còn phải làm
 
-### 4.0 Vừa sửa trong buổi audit 13/08 (chưa commit)
+### 4.0 Đã sửa trong buổi audit 13/08 (đã commit và push)
 
 Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một luật đã học.
 
@@ -185,9 +185,9 @@ Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một lu�
   Chạy ngay lần đầu là ra hai lỗi thật (`di.md` trỏ file đã xoá, version lệch) và
   hai lỗi trong chính doctor. Từ giờ những drift ở §4.0 là việc của script.
 
-### 4.1 Bốn skill chưa viết
+### 4.1 Ba skill chưa viết
 
-**Đã viết trong buổi 13/08 (5)** — `ios-troubleshoot` (bảng §3 giờ là skill, không
+**Đã viết trong buổi 13/08 (6)** — `ios-l10n` (xem §4.0), và `ios-troubleshoot` (bảng §3 giờ là skill, không
 còn nằm một mình trong file này), `ios-endpoint`, `api-intake`, `ios-review`,
 `project-overview`. Lệnh quét trong `project-overview` đã chạy thật trên base, không
 phải lệnh tưởng tượng; `ios-endpoint` lấy đúng API của `KVMockNetworkSession` và
@@ -204,13 +204,11 @@ phải lệnh tưởng tượng; `ios-endpoint` lấy đúng API của `KVMockNe
 - `figma-intake` — Figma → design token + `DESIGN_TOKENS.md`
 - `figma-screen` — một node Figma → SwiftUI View
 
-**Không bị chặn (2)** — làm được ngay:
+**Không bị chặn (1)** — làm được ngay:
 
 - `ios-project` — sửa `project.yml`: thêm configuration, Info.plist key,
   entitlement, scheme, package. Hiện chỉ có một dòng `xcodegen generate` trong
   `ios-verify`.
-- `ios-l10n` — nếu chốt string catalog. Hiện base hardcode chuỗi tiếng Việt trong
-  `Text("Huỷ đơn hàng")` và không luật nào chặn, nên nó sẽ nhân lên 40 màn.
 
 ### 4.2 Skill vẫn chưa được nghiệm thu — nhưng giờ có cân
 

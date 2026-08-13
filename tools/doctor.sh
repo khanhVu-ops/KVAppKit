@@ -12,7 +12,8 @@
 #   4  AGENTS.md nói KVRouterKit 3.1, bảng nói 3.2.0, project.yml pin 3.2.1.
 #   5  subagent chỉ vào `FeatureOrder/OrderList/`, folder đã bỏ từ lâu.
 #   6  hook xcodegen không tới được repo app vì init-base exclude cả `.claude`.
-#   7  bảng skill trong doc nhắc một skill không tồn tại.
+#   7  bảng skill trong doc nhắc một skill không tồn tại — và chiều ngược lại, một
+#      skill viết ra rồi mà không bảng nào nhắc, nên không ai biết để gọi.
 #
 # `HANDOFF.md` được miễn luật 4 và 5: nó là sổ ghi lịch sử, việc nó nhắc một version
 # cũ hay một file đã xoá ("`DI/UnhostedRouter.swift` không còn tồn tại") là đúng chức
@@ -180,6 +181,20 @@ if [ -n "$ghosts" ]; then
     fail "doc nhắc skill không tồn tại" "$ghosts"
 else
     pass "mọi skill được doc nhắc đều tồn tại"
+fi
+
+# Và chiều ngược lại. Một skill không được bảng nào nhắc thì người và agent đều không
+# biết nó có — công viết ra nằm đó không ai gọi, đúng nửa còn lại của cùng một lỗi.
+unadvertised=""
+for dir in .claude/skills/*/; do
+    named="$(basename "$dir")"
+    grep -qE "\`$named\`" AGENTS.md README.md || unadvertised="$unadvertised$named"$'\n'
+done
+if [ -n "$unadvertised" ]; then
+    fail "skill có nhưng không doc nào nhắc" "$unadvertised" \
+        "thêm vào bảng skill trong AGENTS.md và README.md"
+else
+    pass "mọi skill đều được doc nhắc tới"
 fi
 
 echo

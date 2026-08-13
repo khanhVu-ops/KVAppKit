@@ -20,6 +20,7 @@ restore_all() {
     [ -f "$tmp/README.md" ] && cp "$tmp/README.md" README.md
     [ -f "$tmp/init-base.sh" ] && cp "$tmp/init-base.sh" tools/init-base.sh
     [ -f "$tmp/di.md" ] && cp "$tmp/di.md" .claude/skills/ios-architecture/references/di.md
+    [ -f "$tmp/skillmd" ] && cp "$tmp/skillmd" .claude/skills/ios-verify/SKILL.md
     rm -rf .claude/skills/__probe .claude/skills/ios-verify/scripts
     if [ -L .agents/skills.bak ]; then
         rm -f .agents/skills; mv .agents/skills.bak .agents/skills
@@ -68,11 +69,14 @@ mkdir -p .claude/skills/ios-verify/scripts && echo '#!/bin/sh' > .claude/skills/
 check "2 · có bản copy script trong .claude/"
 rm -rf .claude/skills/ios-verify/scripts
 
-# 3 · SKILL.md khai name khác tên folder
-mkdir -p .claude/skills/__probe
-printf -- '---\nname: nham-ten\ndescription: probe\n---\n' > .claude/skills/__probe/SKILL.md
+# 3 · SKILL.md khai name khác tên folder.
+#     Sửa một skill có thật, không tạo folder mới: một folder mới cũng vi phạm luật
+#     "skill nào cũng phải được doc nhắc", nên probe sẽ đỏ vì hai lý do và không còn
+#     chứng minh được luật nào.
+cp .claude/skills/ios-verify/SKILL.md "$tmp/skillmd"
+perl -pi -e 's/^name: ios-verify$/name: nham-ten/' .claude/skills/ios-verify/SKILL.md
 check "3 · name: khác tên folder"
-rm -rf .claude/skills/__probe
+cp "$tmp/skillmd" .claude/skills/ios-verify/SKILL.md
 
 # 4 · doc nói một version khác cái project.yml pin
 printf '\nKVRouterKit 3.1 là version đang dùng.\n' >> .claude/skills/ios-architecture/references/di.md
@@ -91,8 +95,14 @@ cp "$tmp/init-base.sh" tools/init-base.sh
 
 # 7 · doc quảng cáo một skill không tồn tại
 printf '\nDùng skill `ios-ghost` khi cần.\n' >> README.md
-check "7 · doc nhắc skill không tồn tại"
+check "7a · doc nhắc skill không tồn tại"
 cp "$tmp/README.md" README.md
+
+# 7b · chiều ngược lại: skill hợp lệ nhưng không bảng nào nhắc tới
+mkdir -p .claude/skills/__probe
+printf -- '---\nname: __probe\ndescription: probe cho doctor-selftest\n---\n' > .claude/skills/__probe/SKILL.md
+check "7b · skill có mà không doc nào nhắc"
+rm -rf .claude/skills/__probe
 
 echo
 if [ "$fail_count" -gt 0 ]; then
