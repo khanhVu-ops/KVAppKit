@@ -33,7 +33,7 @@ description: >-
 
 | Package | Version | Module import |
 |---|---|---|
-| KVRouter | 3.1.0 | `KVRouterKit` · `KVRouterCore` · `KVRouterTesting` |
+| KVRouter | 3.2.0 | `KVRouterKit` · `KVRouterCore` · `KVRouterTesting` |
 | KVNetworkit | 2.0.0 | `KVNetworkit` |
 | KVDIKit | 1.0.0 | `KVDIKit` |
 | KVToastKit | 1.0.0 | `KVToastKit` |

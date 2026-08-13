@@ -1,10 +1,10 @@
-# KVRouterKit 3.1
+# KVRouterKit 3.2
 
 Ba product, và việc chọn đúng product là cách ép kiến trúc bằng compiler:
 
 | Product | Ai import | Có gì |
 |---|---|---|
-| `KVRouterCore` | ViewModel, presentation | `KVRoute`, `KVRestorableRoute`, `AnyKVRoute`, `KVRouting`, `KVPathCodec`. Foundation only |
+| `KVRouterCore` | ViewModel, presentation | `KVRoute`, `KVRestorableRoute`, `AnyKVRoute`, `KVRouting`, `KVPathCodec`, `KVUnhostedRouter`. Foundation only |
 | `KVRouterKit` | View, App | `KVAppRouter`, `KVRouterHost`, `.kvRoutes`, `KVViewRouting`, transition |
 | `KVRouterTesting` | test target | `KVRouterSpy` |
 
@@ -64,6 +64,23 @@ public protocol KVRouting: AnyObject, Sendable {
 
 `@Environment(\.router)` trả `any KVViewRouting`. Thiếu `KVRouterHost` thì nó là
 `KVNullRouter` — assert kèm hướng dẫn, không im lặng.
+
+## Placeholder cho DI
+
+`KVUnhostedRouter` (Core, 3.2.0+) đứng thay `any KVRouting` cho tới khi
+composition root gắn router thật: no-op và `assertionFailure` ở lệnh đầu tiên,
+có nêu tên lệnh và route type. Hai lựa chọn hiển nhiên đều tệ hơn — `KVAppRouter`
+chưa host thì nuốt push vào một stack vô hình, còn no-op im lặng thì đọc như nút
+bấm hỏng.
+
+⚠️ **3.2.0: `init()` chưa `nonisolated`**, nên không gọi được từ
+`KVDependencyKey.liveValue` (một static nonisolated) — lỗi "main actor-isolated
+default value in a nonisolated context". Chính ví dụ trong doc của nó cũng dính.
+Tới khi upstream thêm `nonisolated`, app tự viết một class tương đương với
+`nonisolated init()`; xem `DI/UnhostedRouter.swift` trong base.
+
+`KVRouterSpy` (KVRouterTesting) thì *ghi lại* lệnh thay vì phàn nàn — đó là test
+double, chỉ link vào test target.
 
 ⚠️ `stackDepth`/`topRoute`/`routes` là **snapshot, không observable**. Đọc từ VM
 thì được; đừng lấy nó lái `body`.
