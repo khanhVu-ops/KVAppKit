@@ -83,8 +83,29 @@ NetworkLoggingURLProtocol.installGlobally(swizzlingSessionConfigurations: true)
 #endif
 ```
 
-`swizzlingSessionConfigurations` đổi implementation của
-`URLSessionConfiguration.protocolClasses` toàn process — **giữ trong `#if DEBUG`**.
+⚠️ **`swizzlingSessionConfigurations: true` crash trên iOS 26.** Nó exchange
+getter `protocolClasses` toàn process, và CFNetwork duyệt mảng trả về gọi
+`+canInitWithTask:` trên từng phần tử:
+
+```
+*** Terminating app due to uncaught exception 'NSInvalidArgumentException',
+reason: '+[NSURLSessionConfiguration canInitWithTask:]: unrecognized selector'
+    -[__NSURLSessionLocal _protocolClassForTask:skipAppSSO:]
+```
+
+Dùng `install(in:)` trên configuration của chính app thay thế — đây là đường
+package tự mô tả là "the explicit, swizzle-free way", và nó đủ dùng:
+
+```swift
+let configuration = URLSessionConfiguration.default
+#if DEBUG
+NetworkLoggingURLProtocol.install(in: configuration)
+#endif
+KVAPIClient(session: KVNetworkSession(configuration: configuration), …)
+```
+
+`installGlobally()` **không kèm swizzle** vẫn an toàn — nó chỉ
+`URLProtocol.registerClass`, phủ `URLSession.shared`.
 
 Release mà vẫn muốn timing/status: `URLSession.networkLogging(configuration:recorder:delegate:)`
 với `NetworkLogRecorder(redactor: .headersAndBodiesOff, logger:)`.

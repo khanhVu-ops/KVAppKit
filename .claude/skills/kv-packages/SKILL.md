@@ -27,6 +27,7 @@ description: >-
 | poll `router.path` trong test | `await router.settle()`, hoặc `KVRouterSpy` | v3.0 thêm `settle()` |
 | `KVAPIClientError.serverMessage(m, code)` | `.serverMessage(message:statusCode:)` | label bắt buộc |
 | `logger.info("token=\(t)")` | `metadata: ["k": .private(t)]` | message string không được redact như metadata |
+| `installGlobally(swizzlingSessionConfigurations: true)` | `install(in: configuration)` | swizzle `protocolClasses` crash trên iOS 26 |
 | capture `var` trong `ToastService {}` | `ToastRecorder` | `post` là `@Sendable`, Swift 6 chặn |
 
 ## Version đang dùng
