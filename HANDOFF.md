@@ -169,6 +169,17 @@ Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một lu�
   và số 4 của bảng §3 giờ là hạ tầng, không còn là việc phải nhớ. `init-base` vì thế
   chỉ exclude `.claude/{skills,agents,commands}` chứ không exclude cả `.claude`, để
   hook đi được sang repo app mà không phải nhân bản sang kit.
+- **19 ngôn ngữ + skill `ios-l10n`** (base: `Localizable.xcstrings`, `check-l10n.sh`,
+  `l10n-baseline.txt`, `check-l10n-selftest.sh`): XcodeGen suy `knownRegions` **từ chính
+  catalog**, nên catalog là nguồn duy nhất và build ra 19 `.lproj`. Chốt với người dùng:
+  base **không** dịch sẵn, nhưng text **mới** phải đủ 19 bản dịch ngay lúc thêm — nợ cũ
+  nằm trong baseline (17 chuỗi) và chỉ được co lại. Text của `Core`/`Domain` thì đã trả:
+  `AppError`, `AlertState`, `SignInUseCase` dùng `String(localized:)` (Foundation, nên
+  luật 1 nguyên vẹn), 8 chuỗi × 19 ngôn ngữ. Luật `return "..."` phải qua
+  `String(localized:)` được **đo trên source trước khi viết**: 9 hit, 8 là text người
+  dùng, 0 literal hạ tầng. Nghiệm thu bằng cách mở app `-AppleLanguages (ja)` và thấy
+  validate của Domain ra tiếng Nhật; `(ar)` thì layout lật RTL đúng vì DesignSystem chỉ
+  dùng leading/trailing.
 - **`tools/doctor.sh` + `doctor-selftest.sh`** (kit): 7 phép kiểm, mỗi cái ứng với
   một lỗi đã xảy ra thật trong buổi này, và 8 probe chứng minh chúng còn bắt được.
   Chạy ngay lần đầu là ra hai lỗi thật (`di.md` trỏ file đã xoá, version lệch) và

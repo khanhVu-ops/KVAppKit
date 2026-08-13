@@ -63,13 +63,21 @@ Text(verbatim: order.code)                // check-l10n.sh miễn `verbatim:`
 // Core/AppError.swift
 var userMessage: String {
     switch self {
-    case .offline: return String(localized: "You appear to be offline.")
+    case .offline:
+        return String(localized: "No internet connection. Please try again.")
+    case .server(let message, _):
+        return message          // text của server, KHÔNG phải key — đừng bọc
     ...
 ```
 
 `String(localized:)` là Foundation, nên `Domain` và `Core` dùng được mà không phá luật
-1 (chỉ import Foundation). Đây là chỗ hay bị bỏ sót nhất, vì `check-l10n.sh` hiện
-**chưa** soi tầng này — xem "Chỗ script chưa với tới" bên dưới.
+1 (chỉ import Foundation).
+
+`check-l10n.sh` canh tầng này bằng hai luật: mọi key trong `String(localized: "...")`
+phải có thật trong catalog (gõ sai key thì app hiện nguyên chữ English, không crash,
+không log — chỉ người dùng thấy), và trong `Core/`+`Domain/` thì `return "..."` **phải**
+đi qua `String(localized:)`. Miễn `return ""` và chuỗi nội suy thuần như
+`"\(code): \(message)"` — cái đầu là "không hiện gì", cái sau là diagnostic cho log.
 
 ### 3. Vào catalog, đủ 19 ngôn ngữ
 
@@ -135,16 +143,19 @@ Layout của repo này đã đúng RTL vì nó chỉ dùng `.leading`/`.trailing
 
 ## Chỗ script chưa với tới
 
-`check-l10n.sh` soi chuỗi ở vị trí `Text`/`Button`/`Label`/`navigationTitle`/
-`confirmationDialog`/`alert` trong `Features/` và `DesignSystem/`. Nó **chưa** soi:
+`check-l10n.sh` soi: chuỗi ở vị trí `Text`/`Button`/`Label`/`navigationTitle`/
+`confirmationDialog`/`alert`, `title:`/`message:` của alert, và `toast.success/error/...`
+trong `Features/` + `DesignSystem/`; key của `String(localized:)` ở mọi tầng; và
+`return "..."` thô trong `Core/`+`Domain/`. Nó **chưa** soi:
 
-- Text sinh từ `Core`/`Domain`/`Data`: `AppError.userMessage`, message của toast,
-  câu validate trong use case. Đây là nợ lớn nhất còn lại của template.
-- Chuỗi ghép động (`"\(a) \(b)"`) — script không đọc được ý định.
-- `accessibilityLabel`, `accessibilityHint`.
+- `Data/` — tầng đó đầy literal wire-level (path, JSON key, key keychain) nên luật
+  `return "..."` sẽ toàn báo sai. Text người dùng gần như không sinh ở đây; nếu có thì
+  vẫn phải `String(localized:)`.
+- Chuỗi ghép động (`"\(a) \(b)"`) — script không đọc được ý định. Ghép câu bằng nội suy
+  cũng là cách làm sai với ngôn ngữ có trật tự từ khác; dùng một key có placeholder.
+- `accessibilityLabel`, `accessibilityHint` — vẫn phải dịch, VoiceOver đọc chúng.
 
-Khoảng trống của script không phải là sự cho phép. Khi sửa những chỗ đó, dùng
-`String(localized:)` và điền đủ 19 ngôn ngữ như mọi string khác.
+Khoảng trống của script không phải là sự cho phép.
 
 ## Thêm hoặc bớt một ngôn ngữ
 
