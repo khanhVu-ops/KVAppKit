@@ -12,6 +12,13 @@ If the change touches a `KV*` symbol — `KVRouting`, `pushView`, `@KVDependency
 private packages: they are not in training data, their APIs changed in 2026, and
 guessing produces code that looks right and does not compile.
 
+## When something fails
+
+Load `ios-troubleshoot` before theorising. Most failures in this stack look like a
+code bug and are not: a file missing from the generated project, a stale swiftmodule
+in DerivedData, a simulator that had not finished booting. Fixing code for an
+infrastructure failure is the fastest way to introduce a real bug.
+
 ## Initialising a new repository
 
 `/init-base <App Name> <bundle.id>` — only in an empty repository. The script

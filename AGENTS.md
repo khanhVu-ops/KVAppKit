@@ -109,5 +109,14 @@ deliberately does not repeat.
 | Any Swift file: where does this go, which layer, what may it import | `ios-architecture` |
 | Touching any `KV*` symbol — router, DI, network, toast, logging | `kv-packages` |
 | A whole feature, end to end | `ios-feature` |
+| One API endpoint: DTO, path, cache policy, mapping, test | `ios-endpoint` |
+| A spec (OpenAPI, Postman) arrives and has to become an inventory | `api-intake` |
 | Build, test, screenshot, confirm it works | `ios-verify` |
+| A command failed, or the app misbehaves in a way that smells like the environment | `ios-troubleshoot` |
+| Review a diff against the repo's own rules | `ios-review` |
+| Map what this repo currently contains | `project-overview` |
 | Brand-new repository | `init-base` |
+
+`ios-troubleshoot` is worth loading *before* theorising about a failure: most of
+what it lists looks like a code bug and is a stale cache, an unregenerated project
+file, or a simulator that had not finished booting.

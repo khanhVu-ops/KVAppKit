@@ -174,7 +174,13 @@ Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một lu�
   Chạy ngay lần đầu là ra hai lỗi thật (`di.md` trỏ file đã xoá, version lệch) và
   hai lỗi trong chính doctor. Từ giờ những drift ở §4.0 là việc của script.
 
-### 4.1 Chín skill chưa viết
+### 4.1 Bốn skill chưa viết
+
+**Đã viết trong buổi 13/08 (5)** — `ios-troubleshoot` (bảng §3 giờ là skill, không
+còn nằm một mình trong file này), `ios-endpoint`, `api-intake`, `ios-review`,
+`project-overview`. Lệnh quét trong `project-overview` đã chạy thật trên base, không
+phải lệnh tưởng tượng; `ios-endpoint` lấy đúng API của `KVMockNetworkSession` và
+`perform(_:_:)` trong repo. Còn lại:
 
 **Bị chặn (2)** — cùng một câu hỏi chưa có lời đáp:
 
@@ -187,20 +193,8 @@ Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một lu�
 - `figma-intake` — Figma → design token + `DESIGN_TOKENS.md`
 - `figma-screen` — một node Figma → SwiftUI View
 
-**Không bị chặn (4)** — làm được ngay:
+**Không bị chặn (2)** — làm được ngay:
 
-- `api-intake` — OpenAPI/Postman → `API_INVENTORY.md` + Endpoint + DTO
-- `ios-endpoint` — thêm một endpoint end-to-end
-- `ios-review` — review diff theo `review-checklist.md` (dùng chung luật, không viết lại)
-- `project-overview` — quét repo thật rồi sinh `PROJECT_OVERVIEW.md`
-
-**Ba cái phát hiện trong buổi audit 13/08**, không bị chặn:
-
-- `ios-troubleshoot` — bảng cạm bẫy ở §3 hiện **chỉ** nằm trong file này, mà file
-  này không được `@import` và không phải skill. Grep chứng minh: `DerivedData`,
-  `log show --info --debug`, `-34018`, `contentShape`, `TEST_HOST` không xuất hiện
-  trong bất kỳ skill nào. Session mới không paste HANDOFF là mất sạch phần đắt
-  nhất — đây là skill đáng viết trước cả bốn cái trên.
 - `ios-project` — sửa `project.yml`: thêm configuration, Info.plist key,
   entitlement, scheme, package. Hiện chỉ có một dòng `xcodegen generate` trong
   `ios-verify`.
