@@ -48,6 +48,7 @@ Chỉ dùng cho repo mới. Nó từ chối chạy nếu đã có `App/`, `Packa
 | `ios-architecture` | trước khi tạo/sửa bất kỳ file Swift nào |
 | `kv-packages` | khi chạm bất kỳ symbol `KV*` |
 | `ios-feature` | một feature trọn vẹn, 12 bước |
+| `ios-l10n` | mọi text người dùng đọc — 19 ngôn ngữ, plural, RTL |
 | `ios-endpoint` | một endpoint: DTO → cachePolicy → map lỗi → test |
 | `api-intake` | có spec OpenAPI/Postman, cần `API_INVENTORY.md` |
 | `ios-verify` | build + test + luật + chạy thật trên simulator |

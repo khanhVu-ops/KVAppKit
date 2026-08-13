@@ -29,6 +29,15 @@ là những thứ script không kiểm được.
 - [ ] Destination không capture state thay đổi được
 - [ ] Route mới cần deep link thì đã có trong `AppDeepLink` **và** `stack(for:)`
 
+## Text
+- [ ] Chuỗi user-facing mới nằm trong `Localizable.xcstrings`, **đủ 19 ngôn ngữ**
+- [ ] Key là chuỗi English, không phải identifier; có `comment`
+- [ ] Text sinh ngoài View dùng `String(localized:)`, không phải literal
+- [ ] Đếm số dùng plural variant, không nối `"\(n) orders"`
+- [ ] Số/ngày/tiền qua `.formatted(...)`, không tự ghép ký hiệu
+- [ ] Chuỗi không dịch (mã đơn, số) khai `Text(verbatim:)`
+- [ ] Có xoá dòng tương ứng trong `tools/l10n-baseline.txt` nếu vừa trả một nợ
+
 ## Logging & privacy
 - [ ] Dữ liệu nhạy cảm ở `metadata` với `.private`, không nội suy vào message
 - [ ] Key metadata mới đã thêm vào allowlist của `PrivacyProcessor` nếu cần giữ

@@ -68,6 +68,25 @@ Each has a reason, and each is checked by `tools/check-arch.sh` in CI.
    unrelated change. Handing it a value lets SwiftUI skip the subtree — this is
    the entire iOS 16 performance strategy, not a style preference.
 
+## 3b · Text
+
+The app declares **19 languages** (en source · ar · zh-Hans · zh-Hant · nl · fr · de ·
+hi · id · it · ja · ko · pt-BR · pt-PT · ru · es · th · tr · vi), and
+`App/Resources/Localizable.xcstrings` is the only place they are declared — XcodeGen
+derives `knownRegions` from the catalog itself.
+
+**Any new user-facing string ships with all 19 translations in the same commit.** Not
+"English for now": a missing translation breaks nothing, fails no test, and logs
+nothing — it silently falls back to English until a real user opens the app in Thai.
+Debt nobody chases is debt nobody pays, so it is refused at the door.
+`tools/check-l10n.sh` enforces it and runs inside `verify.sh`; the template's existing
+hardcoded strings live in `tools/l10n-baseline.txt`, which may only shrink.
+
+Keys are the English text (`Text("Orders")`), not identifiers. Outside SwiftUI —
+ViewModel, `AppError.userMessage`, a use case's validation message — use
+`String(localized:)`, which is Foundation and therefore legal in `Domain`. Load the
+`ios-l10n` skill for plurals, RTL, and number/date/currency formatting.
+
 ## 4 · State, action, navigation
 
 - One `State` struct per screen, `Equatable`, nested in the ViewModel. Derived
@@ -109,6 +128,7 @@ deliberately does not repeat.
 | Any Swift file: where does this go, which layer, what may it import | `ios-architecture` |
 | Touching any `KV*` symbol — router, DI, network, toast, logging | `kv-packages` |
 | A whole feature, end to end | `ios-feature` |
+| Any string a user reads — new text, a language, plurals, RTL | `ios-l10n` |
 | One API endpoint: DTO, path, cache policy, mapping, test | `ios-endpoint` |
 | A spec (OpenAPI, Postman) arrives and has to become an inventory | `api-intake` |
 | Build, test, screenshot, confirm it works | `ios-verify` |
