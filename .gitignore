@@ -1,0 +1,8 @@
+.DS_Store
+
+# `.agents` nằm trong ~/.gitignore_global của máy dựng kit này, nên symlink
+# `.agents/skills` chưa từng vào git: mọi clone đều thiếu nó, trong khi README,
+# CLAUDE.md và HANDOFF.md đều khẳng định nó có. Negate ở đây vì .gitignore của repo
+# thắng global.
+!.agents
+!.agents/skills
