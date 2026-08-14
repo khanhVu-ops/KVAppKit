@@ -79,16 +79,20 @@ nobody looks at, so it breaks quietly.
 ## 3b · Text
 
 The app declares **19 languages** (en source · ar · zh-Hans · zh-Hant · nl · fr · de ·
-hi · id · it · ja · ko · pt-BR · pt-PT · ru · es · th · tr · vi), and
-`App/Resources/Localizable.xcstrings` is the only place they are declared — XcodeGen
-derives `knownRegions` from the catalog itself.
+hi · id · it · ja · ko · pt-BR · pt-PT · ru · es · th · tr · vi) as one `.strings` file
+each: `App/Resources/<lang>.lproj/Localizable.strings`. Not a String Catalog — the build
+rewrites those, and flat files diff, merge and hand to a translation vendor. XcodeGen
+derives `knownRegions` from the `.lproj` directories, so adding a language is adding a
+directory.
 
 **Any new user-facing string ships with all 19 translations in the same commit.** Not
 "English for now": a missing translation breaks nothing, fails no test, and logs
 nothing — it silently falls back to English until a real user opens the app in Thai.
 Debt nobody chases is debt nobody pays, so it is refused at the door.
 `tools/check-l10n.sh` enforces it and runs inside `verify.sh`; the template's existing
-hardcoded strings live in `tools/l10n-baseline.txt`, which may only shrink.
+hardcoded strings live in `tools/l10n-baseline.txt`, which may only shrink. A missing
+`;` makes CFBundle drop an entire file silently, so every file is linted, not just the
+source one.
 
 Keys are the English text (`Text("Orders")`), not identifiers. Text that crosses layers
 — `AppError.userMessage`, `AlertState`, a use case's validation message, a toast — is

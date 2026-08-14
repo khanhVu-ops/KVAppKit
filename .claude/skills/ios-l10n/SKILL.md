@@ -1,9 +1,10 @@
 ---
 name: ios-l10n
 description: >-
-  Thêm hoặc sửa text người dùng thấy trên app iOS này cho đúng: String Catalog
-  (`Localizable.xcstrings`) là nguồn duy nhất, key viết bằng English, và **mọi text
-  mới phải có đủ 19 bản dịch ngay lúc thêm**. Dùng skill này khi viết bất kỳ chuỗi
+  Thêm hoặc sửa text người dùng thấy trên app iOS này cho đúng: 19 file
+  `<lang>.lproj/Localizable.strings` là nguồn duy nhất, key viết bằng English, text đi
+  xuyên tầng mang `LocalizedStringResource`, và **mọi text mới phải có đủ 19 bản dịch
+  ngay lúc thêm**. Dùng skill này khi viết bất kỳ chuỗi
   nào người dùng đọc được — `Text`, `Button`, tiêu đề, message của alert/toast,
   `AppError.userMessage`, validate của use case — hoặc khi thêm/bớt ngôn ngữ, làm
   plural, format số/ngày/tiền, kiểm layout RTL cho tiếng Ả Rập. Một chuỗi hardcode
@@ -20,10 +21,22 @@ en (source) · ar · zh-Hans · zh-Hant · nl · fr · de · hi · id
 it · ja · ko · pt-BR · pt-PT · ru · es · th · tr · vi
 ```
 
-`App/Resources/Localizable.xcstrings` là **nguồn duy nhất**. XcodeGen suy
-`knownRegions` từ chính catalog — thêm một ngôn ngữ ở đó là danh sách Localizations
-trong Xcode tự đúng, và build ra một folder `.lproj` cho mỗi ngôn ngữ. Không có chỗ
-thứ hai khai ngôn ngữ, nên không có chỗ nào để lệch.
+Bảng dịch là **19 file `.strings`**: `App/Resources/<lang>.lproj/Localizable.strings`.
+
+Không dùng String Catalog, và lý do là kinh nghiệm chứ không phải khẩu vị: catalog bị
+**chính build ghi vào** — compiler bóc mọi literal `Text`/`Button` thêm vào ở trạng thái
+chưa dịch (kể cả chuỗi đang cố ý nằm trong baseline), rồi đóng dấu `"extractionState":
+"stale"` lên những key mà `Core`/`Domain` dùng nhiều nhất, đọc như "không ai dùng nữa".
+File `.strings` phẳng thì diff và merge đọc được, mọi hệ dịch thuê ngoài đều nhận, và
+không ai tự sửa nó sau lưng.
+
+Hai thứ mất đi, nói ra để không tưởng nhầm là được canh:
+- **Không có cột State.** `.strings` không phân biệt "đã dịch" với "điền tạm bằng tiếng
+  Anh"; `check-l10n.sh` chỉ đảm bảo đủ key, đủ ngôn ngữ, không giá trị rỗng.
+- **Plural cần `.stringsdict` riêng** — xem mục Plural bên dưới.
+
+XcodeGen suy `knownRegions` từ chính các thư mục `.lproj`, nên thêm một ngôn ngữ là tạo
+thêm một thư mục; không có chỗ thứ hai khai ngôn ngữ để lệch.
 
 ## Luật
 
@@ -43,7 +56,7 @@ co lại**: trả một dòng thì xoá dòng đó, và script fail nếu còn d
 ### 1. Trong View — key là chính chuỗi English
 
 ```swift
-Button("Retry", action: onRetry)          // SwiftUI tra catalog tự động
+Button("Retry", action: onRetry)          // SwiftUI tra bảng dịch tự động
 Text("Orders")
 .navigationTitle("Order detail")
 ```
@@ -95,44 +108,44 @@ Hai điều đã trả giá để biết:
 
 ```swift
 // Core/AppError.swift
-var userMessage: String {
+var userMessage: LocalizedStringResource? {
     switch self {
     case .offline:
-        return String(localized: "No internet connection. Please try again.")
+        return "No internet connection. Please try again."   // literal LÀ key
     case .server(let message, _):
-        return message          // text của server, KHÔNG phải key — đừng bọc
+        // Text của server, viết cho đúng người này bằng ngôn ngữ của họ — không phải
+        // key, đừng dịch lại.
+        return LocalizedStringResource(String.LocalizationValue(message))
+    case .cancelled:
+        return nil            // "không hiện gì" là một trạng thái, không phải chuỗi rỗng
     ...
 ```
 
-`String(localized:)` là Foundation, nên `Domain` và `Core` dùng được mà không phá luật
-1 (chỉ import Foundation).
+`LocalizedStringResource` là Foundation, nên `Domain` và `Core` dùng được mà không phá
+luật 1 (chỉ import Foundation). Đây là điểm mấu chốt: giá trị mang **key**, và View
+resolve nó theo `\.locale` lúc render — nên đổi ngôn ngữ trong app là câu lỗi đổi theo.
 
-`check-l10n.sh` canh tầng này bằng hai luật: mọi key trong `String(localized: "...")`
-phải có thật trong catalog (gõ sai key thì app hiện nguyên chữ English, không crash,
-không log — chỉ người dùng thấy), và trong `Core/`+`Domain/` thì `return "..."` **phải**
-đi qua `String(localized:)`. Miễn `return ""` và chuỗi nội suy thuần như
-`"\(code): \(message)"` — cái đầu là "không hiện gì", cái sau là diagnostic cho log.
+`check-l10n.sh` canh tầng này bằng hai luật: mọi key dùng trong code phải có thật trong
+bảng dịch (gõ sai thì app hiện nguyên chữ English, không crash, không log — chỉ người
+dùng thấy), và `String(localized:)` **không được xuất hiện** ngoài `LanguageStore` —
+xem bảng đo bên trên.
 
-### 3. Vào catalog, đủ 19 ngôn ngữ
+### 3. Thêm key vào **cả 19 file**
 
-Mở `Localizable.xcstrings` bằng Xcode (nó có editor riêng, dùng nó thay vì sửa JSON
-tay khi có thể). Sửa bằng script thì đây là hình dạng:
-
-```json
-"Retry" : {
-  "comment" : "Button on the error state view",
-  "localizations" : {
-    "vi" : { "stringUnit" : { "state" : "translated", "value" : "Thử lại" } },
-    "ja" : { "stringUnit" : { "state" : "translated", "value" : "再試行" } }
-  }
-}
+```strings
+/* Button on the error state view. */
+"Retry" = "Thử lại";
 ```
 
-`state` phải là `translated`. `new` hay `needs_review` đều bị `check-l10n.sh` tính là
-thiếu — cố ý: "đã điền" và "đã dịch" là hai chuyện khác nhau.
+Cùng một key, cùng thứ tự, ở tất cả 19 file — `en.lproj` giữ bản English (key = value).
+Thiếu ở một ngôn ngữ là `check-l10n.sh` fail.
 
-Luôn viết `comment`. Người dịch (hoặc model dịch) không thấy màn hình; "Close" trên
-một nút khác "Close" trong một câu.
+Luôn viết comment `/* … */`. Người dịch (hoặc model dịch) không thấy màn hình; "Close"
+trên một nút khác "Close" trong một câu.
+
+⚠️ **Thiếu một dấu `;`** thì `CFBundle` bỏ qua **toàn bộ file**: cả ngôn ngữ đó rơi về
+tiếng Anh, build không báo gì, không log gì. `check-l10n.sh` chạy `plutil -lint` từng
+file chính vì lỗi này không tự lộ ra.
 
 ### 4. Kiểm
 
@@ -140,30 +153,28 @@ một nút khác "Close" trong một câu.
 ./tools/check-l10n.sh
 ```
 
-## Build không được sửa catalog
+## Đừng để build tự sinh bảng dịch
 
-`project.yml` đặt `SWIFT_EMIT_LOC_STRINGS: "NO"`. Bật (mặc định của Xcode) thì mỗi lần
-build, compiler bóc mọi literal trong `Text`/`Button` và **ghi thêm vào
-`Localizable.xcstrings`** ở trạng thái chưa dịch — kể cả những chuỗi đang cố ý nằm
-trong `tools/l10n-baseline.txt`. Hậu quả gặp thật: `check-l10n.sh` xanh, build thành
-công, rồi `verify.sh` đỏ ngay sau đó vì file vừa bị chính build làm bẩn.
+`project.yml` giữ `SWIFT_EMIT_LOC_STRINGS: "NO"`. Đây là dấu vết của quãng repo còn dùng
+String Catalog: bật nó thì mỗi lần build, compiler bóc chuỗi vào catalog và làm bẩn đúng
+file mà `check-l10n.sh` vừa kiểm sạch — xanh, build xong, rồi `verify.sh` đỏ ngay sau đó.
 
-Nó cũng đánh `"extractionState": "stale"` lên những key **không** phải literal trong
-`Text` — tức là mọi key của `LocalizedStringResource` ở `Core`/`Domain`, những key đang
-được dùng nhiều nhất. "stale" ở đó đọc như "không ai dùng nữa", ngược hẳn sự thật.
-
-Catalog ở repo này là nguồn do người viết, `check-l10n.sh` canh; đừng bật lại extraction
-rồi sửa script cho vừa.
+Với `.strings` thì không có chuyện tự ghi, nhưng cứ để tắt: bảng dịch ở repo này là thứ
+người viết, script canh. Nếu ai đó chuyển ngược về catalog, cái bẫy kia quay lại nguyên vẹn.
 
 ## Plural — đừng nối chuỗi
 
 Tiếng Ả Rập có sáu dạng số, tiếng Nga ba. `"\(count) orders"` là sai ở phần lớn ngôn
 ngữ trong danh sách trên, kể cả khi nó đúng ở English và tiếng Việt.
 
-Catalog có variant theo plural: trong Xcode chọn string → **Vary by Plural**. JSON có
-thêm một lớp `variations.plural.{one,other,...}`. Mỗi ngôn ngữ có bộ dạng riêng, và
-Xcode biết ngôn ngữ nào cần dạng nào — đó là lý do nên mở bằng Xcode cho string dạng
-này thay vì viết JSON tay.
+Với `.strings` thì plural nằm ở file riêng: `<lang>.lproj/Localizable.stringsdict`, một
+plist khai `NSStringPluralRuleType` cho từng dạng (`one`, `few`, `many`, `other`…). Mỗi
+ngôn ngữ có bộ dạng riêng và **chỉ khai đúng những dạng nó có** — thừa một dạng không
+sai, thiếu một dạng thì câu đó rơi về `other` và đọc sai với người bản ngữ.
+
+Đây là chỗ String Catalog tiện hơn thật (một ô "Vary by Plural" trong Xcode). Đánh đổi có
+ý thức: hiếm dùng hơn nhiều so với việc merge một file dịch, và `.stringsdict` vẫn là
+định dạng mọi công cụ dịch hiểu.
 
 ## Số, ngày, tiền — `Text(value, format:)`, KHÔNG phải `.formatted()`
 
@@ -217,11 +228,11 @@ Khoảng trống của script không phải là sự cho phép.
 
 ## Thêm hoặc bớt một ngôn ngữ
 
-1. Sửa danh sách `LANGUAGES` trong `tools/check-l10n.sh` — đó là nguồn của luật.
-2. Điền ngôn ngữ đó cho **mọi** string đang có trong catalog (script sẽ chỉ ra thiếu ở
-   đâu).
-3. `xcodegen generate` → `knownRegions` tự cập nhật.
+1. Tạo `App/Resources/<code>.lproj/Localizable.strings` với **đủ mọi key** đang có.
+2. Thêm `case` vào `AppLanguage` (picker) và mã đó vào `LANGUAGES` của
+   `tools/check-l10n.sh` — script so ba chỗ này với nhau, nên lệch một chỗ là fail.
+3. `xcodegen generate` → `knownRegions` tự cập nhật từ thư mục `.lproj`.
 4. `./tools/verify.sh`, rồi mở app bằng ngôn ngữ mới và xem một màn thật.
 
-Bớt một ngôn ngữ thì xoá ở cả hai chỗ. Để lại bản dịch của một ngôn ngữ không còn khai
-là rác — nó sẽ được bảo trì bởi người tưởng rằng nó còn dùng.
+Bớt một ngôn ngữ thì xoá ở cả ba chỗ. Để lại một thư mục `.lproj` không còn khai là rác —
+nó sẽ được ai đó dịch tiếp vì tưởng còn dùng.

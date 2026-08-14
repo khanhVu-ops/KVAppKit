@@ -36,7 +36,7 @@ là những thứ script không kiểm được.
 - [ ] Ít nhất một preview cho trạng thái khó dựng bằng tay (ngôn ngữ khác, tên dài, dark)
 
 ## Text
-- [ ] Chuỗi user-facing mới nằm trong `Localizable.xcstrings`, **đủ 19 ngôn ngữ**
+- [ ] Chuỗi user-facing mới có trong **cả 19** `<lang>.lproj/Localizable.strings`
 - [ ] Key là chuỗi English, không phải identifier; có `comment`
 - [ ] Text sinh ngoài View mang `LocalizedStringResource`, **không** `String(localized:)`
 - [ ] Đếm số dùng plural variant, không nối `"\(n) orders"`
