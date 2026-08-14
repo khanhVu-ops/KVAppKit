@@ -11,7 +11,7 @@ Cập nhật: 2026-08-14.
 ## 1. Hai repo
 
 ```
-/Users/khanhvu/personal/KVAppBase   template — app chạy được   01eef1f (v1.1.0)
+/Users/khanhvu/personal/KVAppBase   template — app chạy được   48fa09c (v1.1.0)
 /Users/khanhvu/personal/KVAppKit    kit rule + skill           (xem git log)
 ```
 
@@ -19,7 +19,7 @@ Tách kit khỏi template theo đúng mô hình starter kit Android của VarMet
 (`/Users/khanhvu/VarMeta/AND-Varmeta/AND-Authenticator`): base tiến hoá độc lập
 với skill, nên skill không ôm một bản copy source luôn lạc hậu.
 
-### KVAppBase — 74 file Swift, chạy được
+### KVAppBase — 82 file Swift, chạy được
 
 ```
 Core/           Loadable · AlertState · AppError · AppEnvironment
@@ -29,7 +29,7 @@ DI/             mọi KVDependencyKey, và nơi duy nhất
 DesignSystem/   Foundation(token) · Components · Modifiers · Toast · Resources/Tokens.xcassets
 Features/       Auth/ · Order/        một folder là một luồng, không phải một màn
 App/            entry · Navigation · Bootstrap · Session · Resources/<19 lang>.lproj
-Tests/          DomainTests · DataTests · FeatureTests
+Tests/          CoreTests · DomainTests · DataTests · FeatureTests
 tools/          check-arch{,-selftest}.sh · check-l10n{,-selftest}.sh · verify.sh · xcodegen-if-needed.sh
 fastlane/       build_only · beta · web_test · release
 .github/        verify.yml (push + PR) · release.yml (bấm tay)
@@ -52,7 +52,7 @@ Nó chạy: 11 luật kiến trúc → 12 self-test cho chính các luật đó 
 (`a@b.com` / `123456`). Debug dùng fixtures qua cờ `USES_STUB_BACKEND`; đặt `NO`
 trong `project.yml` ngay khi có API thật.
 
-Đã tag **`v1.1.0`** tại `01eef1f`, và `config/base-template.env` pin đúng tag đó thay
+Đã tag **`v1.1.0`** tại `48fa09c`, và `config/base-template.env` pin đúng tag đó thay
 vì `main`: hai người tạo project cách nhau một tuần mà lấy hai cây source khác nhau
 thì không ai tái lập được lỗi của ai. `v1.1.0` là bản làm mọi tầng gỡ ra được — nền
 cho ba tier ở §4.5.
