@@ -49,6 +49,7 @@ Ba câu hỏi, theo thứ tự:
 | Triệu chứng | Nguyên nhân | Xử |
 |---|---|---|
 | Crash ở **request đầu tiên**, `+[NSURLSessionConfiguration canInitWithTask:]: unrecognized selector` | `installGlobally(swizzlingSessionConfigurations: true)` của KVLoggingKit — crash trên iOS 26 | `install(in: configuration)` trên configuration của client mình; `installGlobally()` không cờ vẫn an toàn |
+| Gỡ app rồi cài lại mà vẫn **đang đăng nhập**, không về được màn login | Keychain **không** nằm trong container của app nên iOS giữ lại khi gỡ; `SessionController` seed `isSignedIn` từ token của lần cài trước | `AppBootstrap.clearTokensOnFirstLaunch` — cờ trong `UserDefaults` (thứ **có** bị xoá cùng app) đánh dấu lần chạy đầu của bản cài mới. Phải chạy **trước** khi dựng `SessionController` |
 | Crash lúc đăng nhập trên simulator, keychain `-34018` | build simulator không ký thì `errSecMissingEntitlement` là **bình thường** | report status, đừng trap. Bản đầu trap và crash |
 | Row trong `List` bấm không ăn | `.buttonStyle(.plain)` bỏ vùng chạm cả-ô | `.contentShape(Rectangle())` |
 | Đăng nhập rồi mà mọi push vẫn bị đẩy về sign-in | hai nguồn chân lý cho "đã đăng nhập" | `SessionController` là câu trả lời duy nhất; middleware hỏi nó |
