@@ -104,6 +104,13 @@ printf -- '---\nname: __probe\ndescription: probe cho doctor-selftest\n---\n' > 
 check "7b · skill có mà không doc nào nhắc"
 rm -rf .claude/skills/__probe
 
+# 8 · README nói sai số phép kiểm của chính doctor — đúng lỗi đã xảy ra (README nói
+#     7 khi script chạy 8). Probe sửa con số chứ không xoá dòng: xoá dòng thì luật
+#     fail vì nhánh "README không nói gì", tức là chứng minh nhánh khác.
+perl -pi -e 's/^(\.\/tools\/doctor\.sh\s+# )\d+( phép kiểm)/${1}99$2/' README.md
+check "8 · README nói sai số phép kiểm"
+cp "$tmp/README.md" README.md
+
 echo
 if [ "$fail_count" -gt 0 ]; then
     printf '\033[31m%d/%d phép kiểm không bắt được vi phạm.\033[0m\n' "$fail_count" "$((pass_count + fail_count))"

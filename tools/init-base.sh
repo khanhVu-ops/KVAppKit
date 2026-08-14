@@ -56,12 +56,26 @@ for guard in App Packages project.yml; do
 done
 compgen -G "$kit_root/*.xcodeproj" >/dev/null && fail "đã có .xcodeproj — init-base chỉ dùng cho repo mới"
 
+# `cp -R KVAppKit/. .` copy cả `.git` của kit đè lên `.git` vừa `git init` — repo app
+# thừa hưởng nguyên lịch sử VÀ remote của kit, nên `git push` đầu tiên bắn vào
+# KVAppKit. Đo được: clone thử theo đúng hướng dẫn cũ thì `git log` ra commit của kit
+# và `origin` là KVAppKit.git. Chặn ở đây vì lúc này repo chưa có gì để mất.
+if git -C "$kit_root" remote get-url origin 2>/dev/null | grep -q 'KVAppKit'; then
+  fail "origin đang trỏ về KVAppKit — repo này đang mang lịch sử git của kit.
+  Sửa:  rm -rf .git && git init && git remote add origin <repo app của bạn>
+  Lần sau copy kit bằng:  rsync -a --exclude .git --exclude .DS_Store /path/KVAppKit/ ."
+fi
+
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 printf 'Kéo %s @ %s\n' "$source_repo" "$base_ref"
-git clone --quiet --depth 1 --branch "$base_ref" "$source_repo" "$tmp/base" \
-  || fail "clone thất bại — kiểm tra --source / --ref"
+# `advice.detachedHead=false`: clone theo tag luôn ra detached HEAD, và git in ra sáu
+# dòng khuyên nhủ đọc y như một lỗi. Repo tạm này bị xoá ngay sau đó, không ai commit
+# vào nó cả.
+git clone --quiet --depth 1 -c advice.detachedHead=false --branch "$base_ref" \
+  "$source_repo" "$tmp/base" 2>/dev/null \
+  || fail "clone thất bại — kiểm tra --source / --ref (đang dùng: $source_repo @ $base_ref)"
 resolved_sha="$(git -C "$tmp/base" rev-parse --short HEAD)"
 rm -rf "$tmp/base/.git"
 
@@ -84,6 +98,10 @@ rsync -a \
 # Base tự giới thiệu là template trong một khối có marker; repo mới thì không phải.
 perl -0pi -e 's/<!-- template-only:start -->.*?<!-- template-only:end -->\n\n?//s' "$kit_root/README.md"
 perl -pi -e "s/^# KVAppBase$/# $app_name/" "$kit_root/README.md"
+
+# Cùng cơ chế cho AGENTS.md: khối "Initialise first" nói về việc vừa làm xong, và
+# nó trỏ vào `tools/init-base.sh` — file bị xoá ở cuối script này.
+perl -0pi -e 's/<!-- kit-only:start -->.*?<!-- kit-only:end -->\n\n?//s' "$kit_root/AGENTS.md"
 
 # Đổi danh tính. Tên module Swift phải là identifier hợp lệ.
 module_name="$(printf '%s' "$app_name" | perl -pe 's/[^A-Za-z0-9]//g')"
@@ -108,6 +126,14 @@ perl -pi -e "s|<string>$module_name</string>|<string>$app_name</string>|" "$kit_
 if [[ -f "$kit_root/App/MyApp.swift" ]]; then
   mv "$kit_root/App/MyApp.swift" "$kit_root/App/$module_name.swift"
 fi
+
+# Dọn thứ chỉ có nghĩa trong kit. `HANDOFF.md` là sổ ghi lịch sử của kit — nó vừa bị
+# lần đổi tên ở trên viết vào (nó là `.md`), nên trong repo app nó là một văn bản nói
+# về `DemoAppTests` trong một câu chuyện chưa từng xảy ra ở đây. `config/` và
+# `init-base.sh` là công cụ *tạo* project, vô nghĩa trong project đã tạo — và script
+# này sẽ tự từ chối chạy lần hai.
+rm -f  "$kit_root/HANDOFF.md" "$kit_root/.DS_Store" "$kit_root/tools/init-base.sh"
+rm -rf "$kit_root/config"
 
 command -v xcodegen >/dev/null && (cd "$kit_root" && xcodegen generate --quiet) \
   || echo "xcodegen chưa cài — chạy 'brew install xcodegen' rồi 'xcodegen generate'"

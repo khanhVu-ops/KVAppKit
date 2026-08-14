@@ -10,8 +10,13 @@ phải ôm một bản copy source luôn lạc hậu.
 
 ```bash
 git init my-app && cd my-app
-cp -R /path/to/KVAppKit/. .
+rsync -a --exclude .git --exclude .DS_Store /path/to/KVAppKit/ .
 ```
+
+**Không** dùng `cp -R /path/to/KVAppKit/. .`: nó copy cả `.git` của kit đè lên `.git`
+vừa tạo, nên repo app thừa hưởng nguyên lịch sử **và** `origin` của kit — `git push`
+đầu tiên bắn thẳng vào KVAppKit. `init-base.sh` giờ từ chối chạy khi thấy điều đó,
+nhưng cách chắc chắn là đừng copy `.git` ngay từ đầu.
 
 Rồi trong Claude Code:
 
@@ -76,8 +81,8 @@ config/                repository + version KVAppBase
 ## Kiểm sức khoẻ của kit
 
 ```bash
-./tools/doctor.sh          # 7 phép kiểm; --against DIR nếu repo app nằm chỗ khác
-./tools/doctor-selftest.sh # chứng minh 7 phép kiểm đó còn bắt được vi phạm
+./tools/doctor.sh          # 9 phép kiểm; --against DIR nếu repo app nằm chỗ khác
+./tools/doctor-selftest.sh # chứng minh 9 phép kiểm đó còn bắt được vi phạm
 ```
 
 ## Đo skill có thật sự tác dụng

@@ -14,6 +14,9 @@
 #   6  hook xcodegen không tới được repo app vì init-base exclude cả `.claude`.
 #   7  bảng skill trong doc nhắc một skill không tồn tại — và chiều ngược lại, một
 #      skill viết ra rồi mà không bảng nào nhắc, nên không ai biết để gọi.
+#   8  README quảng cáo "7 phép kiểm" khi script đã chạy 8 — cùng loại lỗi mà
+#      check-arch.sh phải thêm luật 10b mới bắt được: doc và script trôi khỏi nhau
+#      ở đúng chỗ không ai đọc lại.
 #
 # `HANDOFF.md` được miễn luật 4 và 5: nó là sổ ghi lịch sử, việc nó nhắc một version
 # cũ hay một file đã xoá ("`DI/UnhostedRouter.swift` không còn tồn tại") là đúng chức
@@ -28,11 +31,14 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-failures=0 skipped=0
+failures=0 skipped=0 checks=0
 
-fail() { printf '\033[31m✗\033[0m %s\n' "$1"; shift; [ "$#" -gt 0 ] && printf '    %s\n' "$@"; failures=$((failures + 1)); }
-pass() { printf '\033[32m✓\033[0m %s\n' "$1"; }
-skip() { printf '\033[33m–\033[0m %s\n' "$1"; skipped=$((skipped + 1)); }
+# `checks` đếm số dòng kết quả thật sự in ra, chứ không đếm số comment `# N.` —
+# luật 8 so con số đó với con số README hứa, nên nó phải là cái đã chạy, không phải
+# cái đã viết.
+fail() { printf '\033[31m✗\033[0m %s\n' "$1"; shift; [ "$#" -gt 0 ] && printf '    %s\n' "$@"; failures=$((failures + 1)); checks=$((checks + 1)); }
+pass() { printf '\033[32m✓\033[0m %s\n' "$1"; checks=$((checks + 1)); }
+skip() { printf '\033[33m–\033[0m %s\n' "$1"; skipped=$((skipped + 1)); checks=$((checks + 1)); }
 
 against=""
 while [ "$#" -gt 0 ]; do
@@ -54,11 +60,14 @@ if [ ! -L .agents/skills ]; then
     fail ".agents/skills không phải symlink" "restore: ln -s ../.claude/skills .agents/skills"
 elif [ ! -d .agents/skills ]; then
     fail ".agents/skills là symlink chết" "trỏ tới: $(readlink .agents/skills)"
-elif ! git rev-parse --git-dir >/dev/null 2>&1; then
-    # Chưa `git init` thì chưa track được gì — nói là bỏ qua, đừng báo lỗi cho một
-    # thứ chưa thể đúng hay sai.
-    pass ".agents/skills là symlink và sống"
-    skip "symlink có trong git — thư mục này chưa là git repo"
+elif ! git rev-parse --git-dir >/dev/null 2>&1 \
+     || [ -z "$(git ls-files 2>/dev/null | head -1)" ]; then
+    # Chưa `git init`, hoặc đã init mà chưa `git add` lần nào — chưa track được gì.
+    # Nói là bỏ qua, đừng báo lỗi cho một thứ chưa thể đúng hay sai: một repo app vừa
+    # init-base rơi đúng vào đây, và bản trước báo đỏ ngay lần chạy đầu tiên.
+    # Một dòng, không hai: mỗi phép kiểm in đúng một kết quả, vì luật 8 đếm dòng in
+    # ra để so với README.
+    skip ".agents/skills là symlink và sống; chưa kiểm được nó có trong git — repo chưa add file nào"
 elif [ "$(git ls-files .agents/skills 2>/dev/null)" != ".agents/skills" ]; then
     fail ".agents/skills không được git track" \
         "clone sẽ thiếu nó — git add -f .agents/skills"
@@ -158,7 +167,9 @@ fi
 # ---------------------------------------------------------------------------
 # 6. Hook xcodegen tới được repo app: init-base không được exclude cả .claude.
 # ---------------------------------------------------------------------------
-if grep -qE "^\s*--exclude '\.claude'" tools/init-base.sh; then
+# Trong một repo app, `init-base.sh` đã bị chính nó xoá sau khi chạy — không có gì
+# để kiểm, và luật chuyển sang hỏi thẳng cái nó thật sự quan tâm: hook có ở đó không.
+if grep -qE "^\s*--exclude '\.claude'" tools/init-base.sh 2>/dev/null; then
     fail "init-base exclude cả .claude" \
         "settings.json của base (hook xcodegen) sẽ không tới repo app"
 elif [ -n "$source_root" ] && [ ! -f "$source_root/.claude/settings.json" ]; then
@@ -174,7 +185,9 @@ ghosts=""
 for named in $(grep -rhoE '`(ios|kv|api|figma|project)-[a-z-]+`|`init-base`' AGENTS.md README.md CLAUDE.md \
                | tr -d '`' | sort -u); do
     [ -d ".claude/skills/$named" ] && continue
-    grep -qE "^- \`$named\`" HANDOFF.md && continue   # đã ghi là chưa viết
+    # Đã ghi trong sổ là "chưa viết" thì không tính là ma. Repo app không có
+    # HANDOFF.md (init-base xoá) — lúc đó mọi skill được nhắc đều phải có thật.
+    grep -qE "^- \`$named\`" HANDOFF.md 2>/dev/null && continue
     ghosts="$ghosts$named"$'\n'
 done
 if [ -n "$ghosts" ]; then
@@ -195,6 +208,33 @@ if [ -n "$unadvertised" ]; then
         "thêm vào bảng skill trong AGENTS.md và README.md"
 else
     pass "mọi skill đều được doc nhắc tới"
+fi
+
+# ---------------------------------------------------------------------------
+# 8. README nói đúng số phép kiểm mà doctor thật sự chạy.
+#
+#    Bài học của luật 10b trong check-arch.sh: kiểm một nửa câu thì nửa còn lại
+#    được chứng nhận miễn phí. Doctor bắt drift của mọi doc khác mà không bắt drift
+#    của chính dòng doc mô tả nó — và đó đúng là chỗ đã lệch (README nói 7, script
+#    chạy 8).
+#
+#    `+ 1` là chính phép kiểm này: nó chưa in kết quả lúc đang đếm.
+# ---------------------------------------------------------------------------
+ran=$((checks + 1))
+advertised=$(grep -oE 'doctor\.sh[[:space:]]+# ([0-9]+) phép kiểm' README.md \
+             | grep -oE '[0-9]+' | head -1)
+if [ ! -f config/base-template.env ]; then
+    # Repo app: README đến từ KVAppBase và mô tả *app*, không mô tả kit. Bắt nó nói
+    # số phép kiểm của doctor là bắt sai file.
+    skip "README nói đúng số phép kiểm — chỉ áp dụng trong repo kit"
+elif [ -z "$advertised" ]; then
+    fail "README không nói doctor có bao nhiêu phép kiểm" \
+        "thêm dòng: ./tools/doctor.sh          # $ran phép kiểm; ..."
+elif [ "$advertised" != "$ran" ]; then
+    fail "README nói $advertised phép kiểm, doctor chạy $ran" \
+        "sửa cả hai dòng doctor trong README.md"
+else
+    pass "README nói đúng số phép kiểm ($ran)"
 fi
 
 echo

@@ -4,22 +4,22 @@ Mở session mới thì đưa file này cho Claude Code trước. Nó chứa **t
 **quyết định đã chốt kèm lý do**, và **những cái bẫy đã trả giá để biết** — phần
 đắt nhất không phải code, mà là lý do đằng sau nó.
 
-Cập nhật: 2026-08-13.
+Cập nhật: 2026-08-14.
 
 ---
 
 ## 1. Hai repo
 
 ```
-/Users/khanhvu/personal/KVAppBase   template — app chạy được   25edc80
-/Users/khanhvu/personal/KVAppKit    kit rule + skill           f2c5f92
+/Users/khanhvu/personal/KVAppBase   template — app chạy được   73a5c56
+/Users/khanhvu/personal/KVAppKit    kit rule + skill           (xem git log)
 ```
 
 Tách kit khỏi template theo đúng mô hình starter kit Android của VarMeta
 (`/Users/khanhvu/VarMeta/AND-Varmeta/AND-Authenticator`): base tiến hoá độc lập
 với skill, nên skill không ôm một bản copy source luôn lạc hậu.
 
-### KVAppBase — 60 file Swift, chạy được
+### KVAppBase — 74 file Swift, chạy được
 
 ```
 Core/           Loadable · AlertState · AppError · AppEnvironment
@@ -28,9 +28,11 @@ Data/           DTO · Network/{Endpoints,Interceptors} · Mapping · Local · R
 DI/             mọi KVDependencyKey, và nơi duy nhất
 DesignSystem/   Foundation(token) · Components · Modifiers · Toast · Resources/Tokens.xcassets
 Features/       Auth/ · Order/        một folder là một luồng, không phải một màn
-App/            entry · Navigation · Bootstrap · Session · Resources
+App/            entry · Navigation · Bootstrap · Session · Resources/<19 lang>.lproj
 Tests/          DomainTests · DataTests · FeatureTests
-tools/          check-arch.sh · check-arch-selftest.sh · verify.sh
+tools/          check-arch{,-selftest}.sh · check-l10n{,-selftest}.sh · verify.sh · xcodegen-if-needed.sh
+fastlane/       build_only · beta · web_test · release
+.github/        verify.yml (push + PR) · release.yml (bấm tay)
 ```
 
 **Một app target, phân tầng bằng folder.** Không có SPM package (đã từng có, đã
@@ -42,26 +44,42 @@ Kiểm mọi thứ bằng một lệnh:
 cd /Users/khanhvu/personal/KVAppBase && ./tools/verify.sh
 ```
 
-Nó chạy: 10 luật kiến trúc → 11 self-test cho chính các luật đó → xcodegen →
-build + 19 test. Trạng thái hiện tại: **tất cả xanh**.
+Nó chạy: 11 luật kiến trúc → 12 self-test cho chính các luật đó → `check-l10n.sh`
+(38 key × 19 ngôn ngữ, baseline **còn 0**) → self-test cho nó → xcodegen → build +
+22 test. Trạng thái hiện tại (14/08): **tất cả xanh**.
 
 Đăng nhập trong Debug: **email hợp lệ bất kỳ + mật khẩu ≥ 6 ký tự**
 (`a@b.com` / `123456`). Debug dùng fixtures qua cờ `USES_STUB_BACKEND`; đặt `NO`
 trong `project.yml` ngay khi có API thật.
 
-### KVAppKit — 5/14 skill
+Đã tag **`v1.0.0`** tại `73a5c56`, và `config/base-template.env` pin đúng tag đó thay
+vì `main`: hai người tạo project cách nhau một tuần mà lấy hai cây source khác nhau
+thì không ai tái lập được lỗi của ai.
+
+### KVAppKit — 11/14 skill
 
 | Có | Nội dung |
 |---|---|
 | `ios-architecture` | SKILL.md + 7 reference (layers, state-action, navigation, di, errors, ios16, review-checklist) |
 | `kv-packages` | SKILL.md + 5 reference, một file mỗi package, đã đối chiếu source |
 | `ios-feature` | SKILL.md + template feature-spec |
-| `ios-verify` | SKILL.md + 3 script |
+| `ios-l10n` | 19 ngôn ngữ, `LocalizedStringResource`, plural, RTL, đổi ngôn ngữ trong app |
+| `ios-endpoint` | một lát mỏng trong `Data`: DTO → path → map lỗi → test |
+| `api-intake` | spec OpenAPI/Postman → `docs/API_INVENTORY.md` |
+| `ios-verify` | build + test + luật + chạy thật trên simulator (không giữ bản copy script) |
+| `ios-troubleshoot` | bảng triệu chứng → nguyên nhân của §3 |
+| `ios-review` | quy trình review; luật lấy từ `review-checklist.md` |
+| `project-overview` | quét source sinh `PROJECT_OVERVIEW.md` |
 | `init-base` | SKILL.md + `tools/init-base.sh` |
 
 Cộng subagent `swiftui-screen`, command `/init-base`, `AGENTS.md` (canonical),
 `CLAUDE.md` (chỉ `@AGENTS.md`), `.agents/skills` là **symlink** tới
 `.claude/skills` để Codex và Claude Code không thể lệch nhau.
+
+`./tools/doctor.sh` — **9 phép kiểm**, xanh. Luật 8 là mới: doctor so số phép kiểm
+README hứa với số kết quả nó thật sự in ra. Nó ra đời vì README nói 7 trong khi
+script đã chạy 8, tức là doctor bắt drift của mọi doc khác trừ dòng doc mô tả chính
+nó — đúng bài học đã phải thêm luật 10b vào `check-arch.sh` mới bắt được.
 
 ---
 
@@ -125,6 +143,7 @@ Tất cả đều đã gặp thật trong quá trình dựng. Đừng gặp lạ
 | Keychain trả `-34018` (`errSecMissingEntitlement`) | build simulator không ký **luôn** trả lỗi này. Report, đừng trap — bản đầu tiên trap và crash lúc đăng nhập |
 | `Button` + `.buttonStyle(.plain)` trong `List` | mất vùng chạm cả-ô; cần `.contentShape(Rectangle())`, nếu không row như chết |
 | Toạ độ tap trên simulator | là **device point** (402×874), không phải pixel ảnh screenshot (~918×1900). Chia ~2.28 ngang, ~2.17 dọc |
+| `cp -R KVAppKit/. .` để dựng repo app | copy cả `.git` của kit đè lên `.git` vừa tạo → repo app mang lịch sử và `origin` của kit, `git push` đầu tiên bắn vào KVAppKit. Dùng `rsync -a --exclude .git` |
 
 ---
 
@@ -185,6 +204,38 @@ Tất cả đã chạy lại và xanh. Ghi ra đây vì mỗi cái là một lu�
   Chạy ngay lần đầu là ra hai lỗi thật (`di.md` trỏ file đã xoá, version lệch) và
   hai lỗi trong chính doctor. Từ giờ những drift ở §4.0 là việc của script.
 
+### 4.0b Buổi 14/08 — nghiệm thu init-base lần hai, và cái nó lộ ra
+
+`init-base` đã được nghiệm thu **end-to-end trên base hiện tại** (base đã đổi rất
+nhiều từ lần trước: `.strings` thay catalog, CI + 4 lane fastlane, đổi ngôn ngữ
+trong app, luật `#Preview`). Đường đi đã chạy thật: `rsync` kit → `init-base.sh`
+→ `doctor.sh` → `verify.sh` → `DemoApp.app` build được, 22 test xanh.
+
+Nghiệm thu đó lộ ra bốn thứ, cả bốn đã sửa. Không cái nào làm fail build — đó là
+lý do chúng sống được lâu đến vậy:
+
+- **Hướng dẫn tạo project kéo theo cả `.git` của kit.** `git init my-app && cp -R
+  KVAppKit/. .` copy `.git` của kit **đè lên** `.git` vừa tạo, nên repo app thừa
+  hưởng nguyên lịch sử **và** `origin` của kit — `git push` đầu tiên bắn thẳng vào
+  KVAppKit. Đo được, không phải suy luận: chạy đúng hướng dẫn thì `git log` ra
+  commit của kit và `git remote -v` ra `KVAppKit.git`. Giờ README dùng
+  `rsync -a --exclude .git`, và `init-base.sh` **từ chối chạy** khi thấy origin trỏ
+  về KVAppKit — chặn lúc repo còn trống là lúc rẻ nhất.
+- **Repo app mang theo rác của kit.** `HANDOFF.md` (file này) đi sang, rồi bị chính
+  bước đổi tên viết vào — thành một văn bản nói về `DemoAppTests` trong một câu
+  chuyện chưa từng xảy ra ở repo đó. Cộng `config/` và `tools/init-base.sh`, hai
+  công cụ *tạo* project nằm trong project đã tạo. `init-base.sh` giờ tự dọn, kể cả
+  tự xoá chính nó.
+- **`AGENTS.md` dặn chạy một file không còn tồn tại.** Khối "Initialise first" nói
+  về việc vừa làm xong và trỏ vào `tools/init-base.sh`. Giờ nó nằm giữa marker
+  `<!-- kit-only -->` và bị cắt đúng như khối `template-only` của README.
+- **`doctor.sh` báo đỏ trong mọi repo app vừa init.** Luật 1 đòi symlink phải được
+  git track, nhưng repo vừa `git init` thì chưa `git add` gì cả — không có gì để
+  track. Một phép kiểm báo đỏ cho trạng thái *đúng* sẽ dạy người ta bỏ qua màu đỏ,
+  nên nó chuyển thành skip có giải thích. Cùng lý do, luật 8 (số phép kiểm README
+  hứa) chỉ áp dụng trong repo kit: README của repo app đến từ KVAppBase và mô tả
+  app, bắt nó nói về doctor là bắt sai file.
+
 ### 4.1 Ba skill chưa viết
 
 **Đã viết trong buổi 13/08 (6)** — `ios-l10n` (xem §4.0), và `ios-troubleshoot` (bảng §3 giờ là skill, không
@@ -234,15 +285,30 @@ bằng một `claude` giả trả lời theo kịch bản. Không có nó thì m
 harness sẽ đọc y như "skill không có tác dụng" — kết luận sai đắt nhất có thể rút ra
 ở đây.
 
-**Chưa chạy thật** vì sandbox viết nó không có `claude` trên PATH. Chạy ở máy có CLI:
+**14/08: cân đã được kiểm, vẫn chưa cân được.**
 
 ```bash
-./tools/measure-selftest.sh                       # cân còn đúng không
-./tools/measure-skill.sh --all --in ../my-app     # rồi cân thật
+./tools/measure-selftest.sh    # ✓ 4/4 — cái cân phân biệt đúng ba trường hợp trên
+```
+
+Nhưng `measure-skill.sh` thì dừng ngay ở guard đầu tiên: `cần claude CLI trên PATH`.
+Máy này chạy Claude Code **bản desktop**, và bản desktop không cài CLI —
+`npm ls -g` không có `@anthropic-ai/claude-code`, `which claude` không ra gì. Đây là
+cùng một chỗ tắc của buổi trước nhưng vì lý do khác, nên nói cho rõ để lần sau không
+mất công tìm lại:
+
+```bash
+npm i -g @anthropic-ai/claude-code                          # thứ còn thiếu
+./tools/measure-skill.sh --all --in /path/to/app-repo       # rồi cân thật
 ```
 
 `--in` phải là một repo **đã init-base** (có `.claude/skills` + `project.yml`): đo
 trong repo kit thì model không có cây source nào để bắt chước, và kết quả vô nghĩa.
+Repo dùng để nghiệm thu 14/08 dựng đúng cách đó, và dựng lại mất 2 phút.
+
+Đừng thay bằng cách gọi subagent trong một session Claude Code: cột đáng đọc là cột
+**không skill**, mà `skillOverrides` chỉ tắt được qua `--settings` của CLI. Không có
+cột đó thì bài đo mất đúng thứ nó sinh ra để chứng minh.
 
 ### 4.3 Skill chưa được cài ở đâu
 
@@ -259,9 +325,12 @@ Cách chính thức là kit đi cùng repo app:
 
 ```bash
 git init my-app && cd my-app
-cp -R /Users/khanhvu/personal/KVAppKit/. .
+rsync -a --exclude .git --exclude .DS_Store /Users/khanhvu/personal/KVAppKit/ .
 # rồi trong Claude Code:  /init-base "My App" com.company.myapp
 ```
+
+**Không** `cp -R KVAppKit/. .` — xem §4.0b: nó copy cả `.git` của kit, và repo app
+thừa hưởng lịch sử lẫn `origin` của kit.
 
 ### 4.4 Ba việc nhỏ trong KVRouterKit (không gấp)
 
@@ -283,9 +352,13 @@ thì không.
 
 Câu mở đầu gợi ý:
 
-> Đọc `/Users/khanhvu/personal/KVAppKit/HANDOFF.md`. Tiếp tục từ mục 4: viết 4
-> skill chưa bị chặn (`api-intake`, `ios-endpoint`, `ios-review`,
-> `project-overview`), rồi nghiệm thu `kv-packages` và `ios-architecture`.
+> Đọc `/Users/khanhvu/personal/KVAppKit/HANDOFF.md`. Tiếp tục từ §4.2: cài
+> `@anthropic-ai/claude-code`, dựng một repo app bằng `init-base`, rồi chạy
+> `measure-skill.sh --all` để cân `kv-packages` và `ios-architecture`. Xong thì
+> viết skill `ios-project` (§4.1).
+
+Việc chưa xong, theo thứ tự: **cân skill** (§4.2 — cần CLI) → **skill `ios-project`**
+(§4.1, không bị chặn) → **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
 
 Trước khi sửa gì trong KVAppBase, chạy `./tools/verify.sh` để biết điểm xuất phát
 là xanh. Sau khi sửa, chạy lại — và **mở app trên simulator xem đúng màn vừa

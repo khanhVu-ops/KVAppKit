@@ -3,9 +3,16 @@
 Canonical rule set for both Codex and Claude Code. `CLAUDE.md` imports this file;
 do not duplicate architecture detail there or the two will drift.
 
+<!-- kit-only:start -->
 > **Initialise first.** A new repository runs `tools/init-base.sh` to pull a
 > pinned KVAppBase, then replaces the app name and bundle id. After that, update
 > the sections below to describe the app you are actually building.
+
+The markers around this block are not decoration: `init-base.sh` cuts exactly this
+block once the repository has been initialised. The script deletes itself at the
+same time, so a rule file still pointing at it would be describing a file that is
+gone — which is the drift `doctor.sh` check 5 exists to catch.
+<!-- kit-only:end -->
 
 ## 1 · Stack
 

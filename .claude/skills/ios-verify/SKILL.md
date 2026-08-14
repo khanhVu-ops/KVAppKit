@@ -17,14 +17,20 @@ description: >-
 ./tools/verify.sh
 ```
 
-Nó chạy `check-arch.sh` → build → test, và fail sớm ở bước đầu tiên sai. Thứ tự
-đó có lý: luật kiến trúc kiểm trong một giây, build mất một phút.
+Nó chạy `check-arch.sh` → self-test của chính nó → `check-l10n.sh` → self-test của
+chính nó → `xcodegen generate` → build → test, và fail sớm ở bước đầu tiên sai. Thứ
+tự đó có lý: luật kiến trúc và localization kiểm trong một giây, build mất một phút.
+
+Hai self-test chạy **cùng** phép kiểm chứ không phải sau nó: một luật im lặng ngừng
+khớp thì tick xanh của nó chứng nhận điều ngược lại, và đó là thứ đã xảy ra thật.
 
 Chạy riêng khi cần khoanh vùng:
 
 ```bash
-./tools/check-arch.sh              # luật phân tầng
+./tools/check-arch.sh              # 11 luật phân tầng
 ./tools/check-arch-selftest.sh     # chứng minh các luật đó vẫn bắt được vi phạm
+./tools/check-l10n.sh              # text mới đã đủ 19 bản dịch chưa
+./tools/check-l10n-selftest.sh     # chứng minh phép kiểm l10n còn bắt được
 xcodegen generate                  # sau khi thêm hoặc di chuyển BẤT KỲ file nào
 ```
 

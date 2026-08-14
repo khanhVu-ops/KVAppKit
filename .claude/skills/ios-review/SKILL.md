@@ -17,7 +17,7 @@ description: >-
 ./tools/verify.sh
 ```
 
-Chạy trước, không sau. Nó lo 10 luật phân tầng + build + test, nên mọi thứ nó bắt
+Chạy trước, không sau. Nó lo 11 luật phân tầng + localization + build + test, nên mọi thứ nó bắt
 được thì bạn không cần mắt. Review bằng mắt là để tìm những cái script **không**
 kiểm được — và danh sách đó là
 `ios-architecture/references/review-checklist.md`. Mở nó ra, đi từng mục.
