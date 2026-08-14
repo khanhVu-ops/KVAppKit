@@ -327,6 +327,28 @@ không-skill thiếu `install(in:)` (FAIL), lượt sau nó tự nhắc tới (P
 prompt, cùng repo. Nên một verdict đơn lẻ là mẫu n=1; muốn chốt thì phải chạy lặp
 và đọc theo tỷ lệ.
 
+### Chốt 14/08: đo là regression check, không phải audit định kỳ
+
+Đừng chạy `--all` cho vui. Mỗi lượt là 2 phiên `claude` cho mỗi case, và một buổi
+đã chạm `session limit` một lần. Chạy khi **vừa sửa một skill**, và chỉ chạy skill
+đó:
+
+```bash
+./tools/measure-skill.sh kv-packages --in /path/to/app-repo
+```
+
+Đã cân nhắc và **không làm** ba việc sau, vì không việc nào đang chặn cái gì: viết
+prompt khó hơn cho 7 case PASS/PASS, chạy lặp 3 lượt để tăng độ tin, và viết case
+cho 10 skill chưa đo. Chúng đáng làm khi có thay đổi để mà đo — sửa skill, bump
+package, đổi model — chứ không phải như một đợt kiểm kê.
+
+Cũng đã cân nhắc **bỏ bớt skill cho gọn**, và không bỏ cái nào: bằng chứng chỉ phủ
+2/12 skill với 5 prompt mỗi cái. Và "gọn" mua được ít hơn tưởng — thứ luôn nằm
+trong context là *description*, thân skill chỉ nạp khi được gọi. Nếu có cắt thì cắt
+**bên trong**: 7 case không phân biệt được đang chỉ vào những luật model tự biết
+(repository pattern, `AlertState`, `Loadable`, hình dạng DI key). Nhưng cả hai cột
+pass cũng có thể chỉ vì prompt quá dễ, nên đừng cắt trước khi hỏi khó hơn.
+
 ### Bốn lỗi của cái cân, tìm ra bằng chính lần cân đầu
 
 Lượt đo đầu tiên cho **9/10 "CÓ skill mà vẫn sai"** — nghe như bộ skill vô dụng.
@@ -546,8 +568,7 @@ Câu mở đầu gợi ý:
 > pass. Viết prompt khó hơn cho 7 case đó, và chạy lặp vài lượt vì một verdict
 > đơn lẻ đã lật chiều một lần.
 
-Việc chưa xong, theo thứ tự: **7 case chưa đo được gì** (§4.2 — việc thiết kế câu
-hỏi, không phải sửa skill) → **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
+Việc chưa xong, theo thứ tự: **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
 
 Hai điều kiện của bài đo, kiểm trước mỗi lần chạy chứ đừng giả định:
 
