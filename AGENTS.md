@@ -106,9 +106,22 @@ ViewModel, `AppError.userMessage`, a use case's validation message — use
 ```bash
 xcodegen generate                    # after adding or moving files
 ./tools/check-arch.sh                # layering rules
-./tools/verify.sh                    # build + test + arch, all three
+./tools/check-l10n.sh                # new text is translated into all 19 languages
+./tools/verify.sh                    # all of the above + build + test
 ./tools/doctor.sh                    # rule and skill still describe this repo
+
+fastlane ios build_only              # signed .ipa, no upload
+fastlane ios beta                    # TestFlight
+fastlane ios web_test                # ad-hoc → internal App Distribution
+fastlane ios release                 # App Store, not submitted for review
 ```
+
+`verify.sh` runs in CI on every push and PR (`.github/workflows/verify.yml`), so the
+rules above are enforced rather than remembered. Releases are dispatched by hand from
+the Actions tab and build on a self-hosted macOS runner that holds the signing
+certificate — the certificate never leaves that machine. Every lane regenerates the
+project first, because `.xcodeproj` is generated and gitignored, and version lives in
+`project.yml` (`MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`), never in a plist.
 
 Never hand-edit `MyApp.xcodeproj`; it is generated and gitignored.
 

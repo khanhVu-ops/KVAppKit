@@ -97,7 +97,8 @@ module_name="$(printf '%s' "$app_name" | perl -pe 's/[^A-Za-z0-9]//g')"
 # `\bMyApp` không có \b ở cuối là có ý: để `MyAppTests` thành `<Module>Tests`.
 find "$kit_root" \
   \( -name '.git' -o -name '*.xcodeproj' \) -prune -o \
-  -type f \( -name '*.swift' -o -name '*.yml' -o -name '*.plist' -o -name '*.md' \) -print0 \
+  -type f \( -name '*.swift' -o -name '*.yml' -o -name '*.plist' -o -name '*.md' \
+             -o -name 'Appfile' -o -name 'Fastfile' \) -print0 \
   | xargs -0 perl -pi -e "s/\bMyApp/$module_name/g; s/\bcom\.example\.myapp\b/$bundle_id/g; s/\bcom\.example\b/${bundle_id%.*}/g"
 
 perl -pi -e "s/^name: .*/name: $module_name/" "$kit_root/project.yml"
