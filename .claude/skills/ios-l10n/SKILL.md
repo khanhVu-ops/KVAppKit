@@ -140,6 +140,21 @@ một nút khác "Close" trong một câu.
 ./tools/check-l10n.sh
 ```
 
+## Build không được sửa catalog
+
+`project.yml` đặt `SWIFT_EMIT_LOC_STRINGS: "NO"`. Bật (mặc định của Xcode) thì mỗi lần
+build, compiler bóc mọi literal trong `Text`/`Button` và **ghi thêm vào
+`Localizable.xcstrings`** ở trạng thái chưa dịch — kể cả những chuỗi đang cố ý nằm
+trong `tools/l10n-baseline.txt`. Hậu quả gặp thật: `check-l10n.sh` xanh, build thành
+công, rồi `verify.sh` đỏ ngay sau đó vì file vừa bị chính build làm bẩn.
+
+Nó cũng đánh `"extractionState": "stale"` lên những key **không** phải literal trong
+`Text` — tức là mọi key của `LocalizedStringResource` ở `Core`/`Domain`, những key đang
+được dùng nhiều nhất. "stale" ở đó đọc như "không ai dùng nữa", ngược hẳn sự thật.
+
+Catalog ở repo này là nguồn do người viết, `check-l10n.sh` canh; đừng bật lại extraction
+rồi sửa script cho vừa.
+
 ## Plural — đừng nối chuỗi
 
 Tiếng Ả Rập có sáu dạng số, tiếng Nga ba. `"\(count) orders"` là sai ở phần lớn ngôn

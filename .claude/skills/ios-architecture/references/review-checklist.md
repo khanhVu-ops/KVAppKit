@@ -29,12 +29,18 @@ là những thứ script không kiểm được.
 - [ ] Destination không capture state thay đổi được
 - [ ] Route mới cần deep link thì đã có trong `AppDeepLink` **và** `stack(for:)`
 
+## Preview
+- [ ] Mỗi `struct … : View` mới có `#Preview` (luật 11, `check-arch.sh` fail nếu thiếu)
+- [ ] Preview dùng mock từ `Fixtures.swift`, không gọi mạng
+- [ ] Màn có nhiều trạng thái thì có nhiều preview: rỗng, lỗi, đang tải
+- [ ] Ít nhất một preview cho trạng thái khó dựng bằng tay (ngôn ngữ khác, tên dài, dark)
+
 ## Text
 - [ ] Chuỗi user-facing mới nằm trong `Localizable.xcstrings`, **đủ 19 ngôn ngữ**
 - [ ] Key là chuỗi English, không phải identifier; có `comment`
-- [ ] Text sinh ngoài View dùng `String(localized:)`, không phải literal
+- [ ] Text sinh ngoài View mang `LocalizedStringResource`, **không** `String(localized:)`
 - [ ] Đếm số dùng plural variant, không nối `"\(n) orders"`
-- [ ] Số/ngày/tiền qua `.formatted(...)`, không tự ghép ký hiệu
+- [ ] Số/ngày/tiền qua `Text(value, format:)`, **không** `.formatted(...)`
 - [ ] Chuỗi không dịch (mã đơn, số) khai `Text(verbatim:)`
 - [ ] Có xoá dòng tương ứng trong `tools/l10n-baseline.txt` nếu vừa trả một nợ
 

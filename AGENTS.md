@@ -68,6 +68,14 @@ Each has a reason, and each is checked by `tools/check-arch.sh` in CI.
    unrelated change. Handing it a value lets SwiftUI skip the subtree — this is
    the entire iOS 16 performance strategy, not a style preference.
 
+## 3a · Preview
+
+Every `struct … : View` ships with a `#Preview` using mock data from `Fixtures.swift`,
+and `check-arch.sh` fails without one. A preview is the only cheap way to see a screen
+empty, failed, in dark mode, with a long name, or in another language — states that are
+tedious or impossible to reach by running the app. A view with no preview is a view
+nobody looks at, so it breaks quietly.
+
 ## 3b · Text
 
 The app declares **19 languages** (en source · ar · zh-Hans · zh-Hant · nl · fr · de ·
@@ -82,10 +90,15 @@ Debt nobody chases is debt nobody pays, so it is refused at the door.
 `tools/check-l10n.sh` enforces it and runs inside `verify.sh`; the template's existing
 hardcoded strings live in `tools/l10n-baseline.txt`, which may only shrink.
 
-Keys are the English text (`Text("Orders")`), not identifiers. Outside SwiftUI —
-ViewModel, `AppError.userMessage`, a use case's validation message — use
-`String(localized:)`, which is Foundation and therefore legal in `Domain`. Load the
-`ios-l10n` skill for plurals, RTL, and number/date/currency formatting.
+Keys are the English text (`Text("Orders")`), not identifiers. Text that crosses layers
+— `AppError.userMessage`, `AlertState`, a use case's validation message, a toast — is
+typed `LocalizedStringResource`, which is Foundation and therefore legal in `Domain`.
+
+Not `String`. `String(localized:)` and `value.formatted(…)` both resolve immediately
+against the *device* language, so text built that way keeps the system language after
+the user picks another one in the app — measured on a simulator, and the reason
+`check-l10n.sh` refuses both outside the one bridge that needs them. Load the `ios-l10n`
+skill for that table, plurals, RTL, and the in-app language switch.
 
 ## 4 · State, action, navigation
 
