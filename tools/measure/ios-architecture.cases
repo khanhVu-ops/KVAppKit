@@ -4,34 +4,39 @@
 #
 # Chú ý: mấy prompt này cố tình nghe nhỏ ("thêm một field"), vì đó là lúc người ta hay
 # bỏ qua skill nhất.
+#
+# Và chúng cố tình nói về **Coupon / Warranty**, thứ repo CHƯA có. Bản đầu hỏi về
+# Order — thứ repo đã làm sẵn và làm đúng — nên model chỉ cần đọc `Features/Order/`
+# rồi trả lời "đã đúng rồi, không cần sửa". Đúng, nhưng không đo được gì: cây source
+# dạy model thay cho skill, và cả hai cột đều hưởng.
 
-prompt: Thêm một field để màn danh sách đơn biết đang refresh hay không.
+prompt: Tôi đang làm màn danh sách mã giảm giá (Coupon) trong app này. Thêm một field để màn đó biết đang refresh hay không.
 expect: Loadable|isRefreshing
 reject: @Published var isLoading
 ---
 
-prompt: Màn chi tiết đơn cần gọi API lấy đơn theo id. Viết ViewModel cho nó.
+prompt: Màn chi tiết mã giảm giá cần gọi API lấy coupon theo id. Viết ViewModel cho nó.
 expect: repository|Repository
 reject: URLSession
 reject: JSONDecoder
 reject: KVAPIClientError
 ---
 
-prompt: Tách phần row của danh sách đơn ra một view con cho gọn.
+prompt: Danh sách mã giảm giá đang render cả row trong một View. Tách phần row ra view con cho gọn.
 expect: Equatable
 expect: nonisolated static func ==
 reject: @ObservedObject var viewModel
 reject: @EnvironmentObject var viewModel
 ---
 
-prompt: Màn danh sách cần hiện alert khi huỷ đơn thất bại. Làm thế nào?
+prompt: Màn danh sách mã giảm giá cần hiện alert khi áp mã thất bại. Làm thế nào?
 expect: AlertState|state\.alert
 reject: AsyncStream
 reject: ViewEffect
 reject: PassthroughSubject
 ---
 
-prompt: Tôi cần một struct mô tả đơn hàng để dùng chung. Đặt ở đâu và viết thế nào?
+prompt: Tôi cần một struct mô tả phiếu bảo hành (Warranty) để dùng chung. Đặt ở đâu và viết thế nào?
 expect: Domain/Entities
 expect: import Foundation
 reject: import SwiftUI

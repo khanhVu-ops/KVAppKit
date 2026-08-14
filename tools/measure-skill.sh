@@ -68,26 +68,63 @@ disabled_settings() {
     printf '{"skillOverrides":{"%s":"off"}}' "$name"
 }
 
+# Bài đo chấm **câu trả lời**, nên nó phải là một câu trả lời chứ không phải một
+# phiên agent đi sửa repo. Hai chốt, áp y hệt cho cả hai cột nên không lệch cột nào:
+#
+#   - chặn tool ghi. Đo lần đầu (14/08) không chặn, và `-p` thì trust dialog bị bỏ
+#     qua nên `permissions.allow` của repo không có hiệu lực: model đứng lại xin
+#     quyền ghi, output rỗng code, cả hai cột FAIL vì "thiếu" — đọc y như skill vô
+#     dụng. Cấp quyền ghi cũng hỏng, theo hướng ngược lại: model ghi file rồi trả
+#     lời "đã thêm vào X", cũng không còn code để chấm.
+#   - dặn thẳng là trả code trong chat.
+NO_WRITE_TOOLS=(--disallowedTools Write Edit NotebookEdit)
+ANSWER_INLINE=$'\n\n(Trả lời bằng code trong chat. Đừng ghi file, đừng chạy lệnh.)'
+
 run_claude() {
-    local prompt="$1" settings="${2:-}"
+    local prompt="$1$ANSWER_INLINE" settings="${2:-}"
     if [ -n "$settings" ]; then
-        (cd "$target" && claude -p "$prompt" --settings "$settings" 2>&1)
+        (cd "$target" && claude -p "$prompt" "${NO_WRITE_TOOLS[@]}" --settings "$settings" 2>&1)
     else
-        (cd "$target" && claude -p "$prompt" 2>&1)
+        (cd "$target" && claude -p "$prompt" "${NO_WRITE_TOOLS[@]}" 2>&1)
     fi
 }
 
+# Một phiên chết vì hạ tầng — hết quota, mất login, CLI lỗi — trả về output không
+# có code, và bài đo chấm nó y hệt một câu trả lời sai: "CÓ skill mà vẫn sai, sửa
+# skill đừng sửa case". Đã xảy ra thật (14/08): cả 10 cột rỗng vì `You've hit your
+# session limit`, và bảng kết quả đọc như một bản án cho skill.
+#
+# Nên đây phải là exit 2 — "không đo được", khác hẳn exit 1 — "đo được và xấu".
+infra_failure() {
+    grep -qiE "hit your session limit|rate limit|Not logged in|Invalid API key|usage limit|Credit balance" <<< "$1"
+}
+
+# Chỉ phần trong ``` fence. `reject:` phải soi ở đây, không soi cả output: một câu
+# trả lời **đúng** thì gọi tên đúng cái nó khuyên tránh — "chỉ import Foundation,
+# không Decodable" là câu chuẩn của skill, và nó trượt `reject: Decodable` nếu đem
+# regex quét văn xuôi. Lần đo đầu mất 4 case vì đúng chuyện này.
+code_blocks() {
+    perl -ne 'if (/^\s*```/) { $in = !$in; next } print if $in'
+}
+
 # assert <output> <expect-list> <reject-list> → in "PASS" hoặc lý do fail
+#
+# `expect:` soi cả output (một đường dẫn như `Domain/Entities` nằm ở văn xuôi là
+# hợp lệ), `reject:` chỉ soi code — xem `code_blocks`.
 assert_output() {
-    local out="$1" expects="$2" rejects="$3" problems=""
+    local out="$1" expects="$2" rejects="$3" problems="" code
+    code="$(code_blocks <<< "$out")"
     while IFS= read -r re; do
         [ -n "$re" ] || continue
         grep -qE "$re" <<< "$out" || problems="$problems thiếu:/$re/"
     done <<< "$expects"
     while IFS= read -r re; do
         [ -n "$re" ] || continue
-        grep -qE "$re" <<< "$out" && problems="$problems có:/$re/"
+        grep -qE "$re" <<< "$code" && problems="$problems có:/$re/"
     done <<< "$rejects"
+    # Không có code block nào thì không có gì để chấm. Im lặng cho qua ở đây sẽ
+    # đọc thành "skill làm đúng", nên nó phải là một fail có tên riêng.
+    [ -z "$code" ] && problems="$problems không-có-code-block"
     [ -z "$problems" ] && echo "PASS" || echo "FAIL —$problems"
 }
 
@@ -108,6 +145,17 @@ for case_file in "${cases[@]}"; do
         without="$(run_claude "$prompt" "$(disabled_settings "$name")")"
         printf '%s\n' "$with"    > "$log_dir/$name-$index-with.txt"
         printf '%s\n' "$without" > "$log_dir/$name-$index-without.txt"
+
+        # Dừng ngay, đừng chấm. Chấm tiếp là in ra một bảng kết quả trông như đo
+        # thật trong khi không có phiên nào chạy được.
+        if infra_failure "$with$without"; then
+            printf '\033[31m✗ phiên claude chết vì hạ tầng, không phải vì skill:\033[0m\n'
+            grep -ioE "hit your session limit.*|rate limit.*|Not logged in.*|Invalid API key.*|usage limit.*|Credit balance.*" \
+                <<< "$with$without" | head -2 | sed 's/^/    /'
+            printf '    log: %s/%s-%s-*.txt\n' "$log_dir" "$name" "$index"
+            exit 2
+        fi
+
         v_with="$(assert_output "$with" "$expects" "$rejects")"
         v_without="$(assert_output "$without" "$expects" "$rejects")"
 

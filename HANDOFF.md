@@ -275,9 +275,9 @@ là lỗi im lặng, không phải lỗi build:
 Còn `figma-intake` và `figma-screen` là hai skill duy nhất chưa viết, cả hai đều
 chặn ở câu hỏi AppSpec MCP ở trên.
 
-### 4.2 Skill vẫn chưa được nghiệm thu — nhưng giờ có cân
+### 4.2 Cân skill — đã cân lần đầu
 
-Vẫn là lỗ hổng lớn nhất, và nói cho chính xác: **cân đã có, chưa cân lần nào.**
+Lỗ hổng lớn nhất của bộ skill, và 14/08 là lần đầu nó được đo thay vì được tin.
 
 `tools/measure-skill.sh` chạy cùng một prompt hai lần trên cùng một repo app — một
 lần bình thường, một lần với `--settings '{"skillOverrides":{"<skill>":"off"}}'` —
@@ -294,43 +294,72 @@ Ba kết quả, và chỉ một cái là tin tốt:
 | PASS | PASS | prompt không đo được gì, model tự đúng. Đổi prompt khó hơn hoặc bỏ |
 | FAIL | — | skill chưa nói đủ rõ. Sửa **skill**, đừng sửa case cho vừa |
 
-`tools/measure-selftest.sh` chứng minh cái cân phân biệt được đúng ba trường hợp đó,
+`tools/measure-selftest.sh` (7 phép kiểm) chứng minh cái cân phân biệt được đúng ba trường hợp đó,
 bằng một `claude` giả trả lời theo kịch bản. Không có nó thì một lỗi parse trong
 harness sẽ đọc y như "skill không có tác dụng" — kết luận sai đắt nhất có thể rút ra
 ở đây.
 
-**14/08: cân đã được kiểm, vẫn chưa cân được.**
+## ✅ 14/08: đã cân thật lần đầu
 
-```bash
-./tools/measure-selftest.sh    # ✓ 4/4 — cái cân phân biệt đúng ba trường hợp trên
-```
+CLI cài bằng `npm i -g @anthropic-ai/claude-code` (2.1.232), login bằng tay một
+lần (`claude` → `/login` — CLI có auth **riêng**, không dùng chung phiên với bản
+desktop, và không có `ANTHROPIC_API_KEY` trong môi trường).
 
-**CLI đã cài — và chỗ tắc đã lùi được một nấc, không phải hết.**
+**Kết quả — 3/10 case chứng minh được skill có tác dụng:**
 
-```bash
-npm i -g @anthropic-ai/claude-code   # xong: /opt/homebrew/bin/claude, 2.1.232
-```
+| case | có skill | không skill |
+|---|---|---|
+| arch #3 · tách row ra view con | PASS | FAIL — `@ObservedObject var viewModel` |
+| kv #2 · router cho ViewModel | PASS | FAIL — `pushView` |
+| kv #5 · bật network console | PASS | FAIL — thiếu `install(in:)` |
+| 7 case còn lại | PASS | PASS |
 
-Guard `cần claude CLI trên PATH` giờ qua được. Nhưng `claude -p` trả về:
+Ba chỗ skill đổi được kết quả đều là luật **không suy ra được từ đâu khác**: view
+con phải `Equatable` nhận value (luật hiệu năng iOS 16), ViewModel chỉ thấy
+`KVRouting`/KVRouterCore, và `install(in:)` thay vì swizzle. Đúng chỗ đáng có skill.
 
-```
-Not logged in · Please run /login
-```
+**7 case cả hai cột đều pass là kết quả thật, không phải lỗi** — model tự làm đúng,
+prompt đó không chứng minh được gì. Việc còn lại của §4.2 là viết prompt khó hơn
+cho 7 case đó, và đó là việc *thiết kế câu hỏi*, không phải sửa skill.
 
-CLI có **auth riêng**, không dùng chung phiên với bản desktop đang chạy — và
-`ANTHROPIC_API_KEY` cũng không có trong môi trường. Login là việc phải làm bằng
-tay, một lần, trong terminal thật (nó mở trình duyệt):
+**⚠️ Một lượt chạy chưa đủ tin.** kv #5 lật chiều giữa hai lượt: lượt đầu cột
+không-skill thiếu `install(in:)` (FAIL), lượt sau nó tự nhắc tới (PASS). Cùng
+prompt, cùng repo. Nên một verdict đơn lẻ là mẫu n=1; muốn chốt thì phải chạy lặp
+và đọc theo tỷ lệ.
 
-```bash
-claude          # rồi /login
-```
+### Bốn lỗi của cái cân, tìm ra bằng chính lần cân đầu
 
-Cộng một cửa nữa ngay sau đó: repo đo nằm ngoài workspace đã tin cậy nên CLI in
-`Ignoring 5 permissions.allow entries … this workspace has not been trusted`.
-Chạy `claude` một lần trong đúng thư mục đó và nhận dialog, hoặc đặt
-`projects["<đường dẫn>"].hasTrustDialogAccepted: true` trong `~/.claude.json`.
+Lượt đo đầu tiên cho **9/10 "CÓ skill mà vẫn sai"** — nghe như bộ skill vô dụng.
+Cả 9 đều giả, và mỗi lỗi giờ có một phép kiểm trong `measure-selftest.sh` (7/7):
 
-Sau khi login xong thì cân thật:
+- **Model đứng lại xin quyền ghi file.** `-p` bỏ qua trust dialog, nên
+  `permissions.allow` của repo không có hiệu lực và `Write` không có đường duyệt.
+  Output rỗng code → cả hai cột FAIL "thiếu". Cấp quyền cũng hỏng theo hướng
+  ngược lại: đo thử với `--permission-mode bypassPermissions` thì model bỏ đi làm
+  việc thật, quá 6 phút chưa xong, và trả về "đã thêm vào file X" — cũng không còn
+  code để chấm. Cách đúng là **chặn** tool ghi (`--disallowedTools Write Edit
+  NotebookEdit`) cộng một câu dặn trả code trong chat, áp y hệt cả hai cột.
+- **`reject:` quét cả văn xuôi.** Câu trả lời **đúng** của skill là câu gọi tên
+  đúng thứ nó khuyên tránh — "chỉ `import Foundation`, không `Decodable`" trượt
+  `reject: Decodable`. Giờ `reject:` chỉ soi trong ` ``` ` fence; `expect:` vẫn soi
+  cả output vì một đường dẫn như `Domain/Entities` nằm ở văn xuôi là hợp lệ.
+- **Prompt hỏi thứ repo đã có.** Case cũ hỏi về Order — thứ base đã làm sẵn và làm
+  đúng — nên model đọc `Features/Order/` rồi trả lời "đã đúng rồi". Cây source dạy
+  model thay cho skill, và cả hai cột cùng hưởng. Case giờ nói về **Coupon /
+  Warranty**, thứ repo chưa có.
+- **Phiên chết vì hạ tầng bị chấm như câu trả lời sai.** Một lượt hết quota giữa
+  chừng (`You've hit your session limit`) làm cả 10 cột rỗng, và harness in ra
+  *"5 case sai NGAY CẢ KHI có skill — sửa skill, đừng sửa case"*. Giờ nó `exit 2`
+  với `phiên claude chết vì hạ tầng, không phải vì skill` — tách "không đo được"
+  khỏi "đo được và xấu".
+
+Ba lỗi đầu có chung một hình dạng, và đó là bài học đắt nhất của §4.2: **mọi lỗi
+hạ tầng ở đây đều đọc thành "skill vô dụng"**. `measure-selftest.sh` không bắt
+được cái nào vì `claude` giả của nó trả lời theo kịch bản — không văn xuôi, không
+đụng permission, không hết quota. Một cái cân tự kiểm vẫn có thể sai ở đúng những
+chiều mà bài tự kiểm không đi qua.
+
+Chạy lại:
 
 ```bash
 ./tools/measure-skill.sh --all --in /path/to/app-repo
@@ -512,16 +541,22 @@ màu đỏ. Giờ nó đếm riêng và in vàng. `doctor-selftest.sh` vẫn 10/
 
 Câu mở đầu gợi ý:
 
-> Đọc `/Users/khanhvu/personal/KVAppKit/HANDOFF.md`. Tiếp tục từ §4.2: tôi đã
-> `claude /login` trong terminal rồi. Dựng một repo app bằng `init-base --keep-demo`,
-> rồi chạy `measure-skill.sh --all --in <repo đó>` để cân `kv-packages` và
-> `ios-architecture`.
+> Đọc `/Users/khanhvu/personal/KVAppKit/HANDOFF.md`. Tiếp tục từ §4.2: cân đã
+> chạy thật, 3/10 case chứng minh được skill có tác dụng, 7 case cả hai cột đều
+> pass. Viết prompt khó hơn cho 7 case đó, và chạy lặp vài lượt vì một verdict
+> đơn lẻ đã lật chiều một lần.
 
-Việc chưa xong, theo thứ tự: **cân skill** (§4.2 — CLI đã cài, chặn ở `/login`,
-là việc phải làm bằng tay) → **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
+Việc chưa xong, theo thứ tự: **7 case chưa đo được gì** (§4.2 — việc thiết kế câu
+hỏi, không phải sửa skill) → **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
 
-Case của `measure` nhắc tới luồng Order, nên repo để đo phải dựng bằng
-`--keep-demo`; tier tool không có `OrderRoute` nào để model bắt chước.
+Hai điều kiện của bài đo, kiểm trước mỗi lần chạy chứ đừng giả định:
+
+- Repo đo phải dựng bằng `init-base --keep-demo` — case nhắc tới luồng Order, tier
+  tool không có `OrderRoute` nào cả.
+- Skill phải **thật sự nạp** trong repo đó, và `skillOverrides` phải **thật sự
+  tắt** được. Hỏi thẳng `claude -p "liệt kê skill khả dụng"` hai lần, một lần kèm
+  `--settings '{"skillOverrides":{"kv-packages":"off"}}'`. Không kiểm bước này thì
+  cả hai cột là "không skill" và bảng kết quả vẫn trông bình thường.
 
 Trước khi sửa gì trong KVAppBase, chạy `./tools/verify.sh` để biết điểm xuất phát
 là xanh. Sau khi sửa, chạy lại — và **mở app trên simulator xem đúng màn vừa

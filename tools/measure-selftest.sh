@@ -50,23 +50,46 @@ check() {
 echo "Kiểm measure-skill.sh có phân biệt đúng ba kết quả:"
 echo
 
+ok=$'```swift\nimport KVRouterKit\n```'
+bad=$'```swift\nimport KVRouter\n```'
+
 check "1 · skill có tác dụng (có: đúng, không: sai)" \
-    "dùng KVRouterKit nhé" "import KVRouter" 0 "skill có tác dụng"
+    "$ok" "$bad" 0 "skill có tác dụng"
 
 check "2 · prompt không đo được gì (cả hai đúng)" \
-    "dùng KVRouterKit nhé" "cũng KVRouterKit" 1 "không đo được gì"
+    "$ok" "$ok" 1 "không đo được gì"
 
 check "3 · có skill mà vẫn sai" \
-    "import KVRouter" "import KVRouter" 1 "CÓ skill mà vẫn sai"
+    "$bad" "$bad" 1 "CÓ skill mà vẫn sai"
+
+# Đây là phép kiểm sinh ra từ lần đo thật đầu tiên (14/08), nơi 4/10 case fail giả
+# vì `reject:` quét cả văn xuôi: câu trả lời **đúng** của skill là câu gọi tên đúng
+# thứ nó khuyên tránh ("chỉ import Foundation, không Decodable"). Regex không phân
+# biệt được lời khuyên với vi phạm; code block thì phân biệt được.
+check "4 · reject: nằm ở văn xuôi thì không tính là vi phạm" \
+    $'Đừng viết `import KVRouter` — tên module đó là của v1.\n\n'"$ok" \
+    "$bad" 0 "skill có tác dụng"
+
+# Và chiều ngược lại: output không có code block nào thì không có gì để chấm. Im
+# lặng cho qua sẽ đọc thành "skill làm đúng" — đúng cách một phiên bị chặn quyền
+# ghi file đã đọc thành "skill vô dụng" ở lần đo đầu.
+check "5 · không có code block thì fail có tên, không pass ngầm" \
+    "dùng KVRouterKit nhé, không có code đâu" "$bad" 1 "không-có-code-block"
+
+# Phiên chết vì hạ tầng phải là exit 2 ("không đo được"), không phải exit 1 ("đo
+# được và xấu"). Xảy ra thật 14/08: hết quota giữa chừng, cả 10 cột rỗng, và bảng
+# kết quả kết án skill bằng đúng câu "sửa skill, đừng sửa case".
+check "6 · hết quota thì dừng, không chấm" \
+    "You've hit your session limit · resets 12:40am" "$bad" 2 "chết vì hạ tầng"
 
 # Guard: thiếu --in, hoặc target không phải repo app, phải chết rõ ràng chứ không
 # âm thầm đo trong repo kit.
 out=$(PATH="$tmp/bin:$PATH" ./tools/measure-skill.sh "$tmp/probe.cases" 2>&1); code=$?
 if [ "$code" = 2 ] && grep -q 'cần --in' <<< "$out"; then
-    printf '\033[32m✓\033[0m 4 · thiếu --in thì dừng, không đo bừa\n'
+    printf '\033[32m✓\033[0m 7 · thiếu --in thì dừng, không đo bừa\n'
     pass_count=$((pass_count + 1))
 else
-    printf '\033[31m✗\033[0m 4 · thiếu --in mà vẫn chạy (exit %s)\n' "$code"
+    printf '\033[31m✗\033[0m 7 · thiếu --in mà vẫn chạy (exit %s)\n' "$code"
     fail_count=$((fail_count + 1))
 fi
 

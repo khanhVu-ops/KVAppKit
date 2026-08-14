@@ -2,9 +2,10 @@
 # tên module cũ, route stringly-typed, modal trên router — vì đó là hình dạng phổ biến
 # trong training data, còn v3 thì không có ở đâu cả.
 #
-# Đây chính là prompt đã ghi trong HANDOFF §4.2.
+# Đây chính là prompt đã ghi trong HANDOFF §4.2, đổi chủ ngữ sang Coupon: hỏi về
+# Order thì model đọc `Features/Order/` ra là xong, và cây source trả lời thay skill.
 
-prompt: Thêm màn chi tiết đơn hàng vào app này, push từ danh sách, có hero zoom từ card, và present một sheet chọn địa chỉ. Chỉ cần code, không cần chạy.
+prompt: Thêm màn chi tiết mã giảm giá (Coupon) vào app này, push từ danh sách, có hero zoom từ card, và present một sheet chọn địa chỉ. Chỉ cần code, không cần chạy.
 expect: KVRouterKit|KVRouterCore
 expect: pushView|push\(
 expect: kvTransitionSource|transition
@@ -13,14 +14,19 @@ reject: appFeature
 reject: router\.(presentSheet|present)\(
 ---
 
-prompt: ViewModel của màn danh sách đơn cần điều hướng sang màn chi tiết theo id, dùng router nào và import gì?
+# "Chỉ file ViewModel" không phải câu thừa: luật ở đây là *ViewModel* không thấy
+# KVRouterKit, mà bài đo chấm trên chat thì không thấy ranh giới file. Bản đầu để
+# prompt mở, và câu trả lời **đúng** — ViewModel dùng KVRouterCore, kèm một block
+# riêng cho chỗ register route ở tầng View, nơi `import KVRouterKit` là đúng — bị
+# tính là vi phạm. Thu prompt về một file thì reject mới nói đúng điều nó định nói.
+prompt: ViewModel của màn danh sách mã giảm giá cần điều hướng sang màn chi tiết theo id. Dùng router nào, import gì, viết ra giúp tôi. Chỉ viết đúng file ViewModel, đừng kèm phần register route.
 expect: KVRouterCore
 expect: KVRouting
 reject: import KVRouterKit
 reject: pushView
 ---
 
-prompt: Khai một dependency key cho OrderRepository trong app này, kèm giá trị dùng trong test.
+prompt: Khai một dependency key cho CouponRepository trong app này, kèm giá trị dùng trong test.
 expect: KVDependencyKey
 expect: testValue
 expect: liveValue
