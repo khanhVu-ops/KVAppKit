@@ -57,7 +57,41 @@ Chuỗi **không** dịch — mã đơn, số, tên riêng — nói tường min
 Text(verbatim: order.code)                // check-l10n.sh miễn `verbatim:`
 ```
 
-### 2. Ngoài View (ViewModel, Domain, Core) — `String(localized:)`
+## Đổi ngôn ngữ trong app — và vì sao kiểu dữ liệu quyết định chuyện đó
+
+Người dùng chọn ngôn ngữ trong app (`LanguagePickerView`), `LanguageStore` giữ lựa
+chọn, `MyApp` bơm vào `\.locale`. Không ghi `AppleLanguages` rồi bắt khởi động lại.
+
+Đo thật trên simulator (ngôn ngữ máy `vi`, environment `ja`):
+
+| Cách viết | Đổi theo ngôn ngữ chọn trong app? |
+|---|---|
+| `Text("key")` (`LocalizedStringKey`) | có |
+| `Text(LocalizedStringResource("key"))` | có |
+| `Text(String(localized: "key"))` | **không** |
+| `String(localized: "key", locale: ja)` | **không** — `locale:` chỉ đổi format số/ngày, không đổi `.lproj` |
+| `Text(value, format: …)` | có |
+| `value.formatted(…)` | **không** |
+
+Nên **text đi xuyên tầng mang `LocalizedStringResource`, không mang `String`**:
+`AppError.userMessage`, `AlertState.title/message`, `ToastService.post`,
+`ValidationError.userMessage`. Trả `String` là resolve sớm — và mọi cách sai ở bảng
+trên đều compile, chạy, không log gì; chúng chỉ lộ ra khi người dùng đổi ngôn ngữ rồi
+thấy một nửa màn hình không đổi theo.
+
+Hai điều đã trả giá để biết:
+
+- **`navigationTitle` không đổi theo `\.locale` khi đang hiển thị.** Nó do navigation
+  bar của UIKit vẽ và không resolve lại; tiêu đề giữ nguyên ngôn ngữ cũ tới khi mở lại
+  màn. Vì vậy `MyApp` gắn `.id(language.current)` — đổi ngôn ngữ là rebuild cả cây.
+  Stack **không** mất: `KVAppRouter` giữ path bên ngoài view identity (đã kiểm: đang ở
+  màn chi tiết, đổi ngôn ngữ, vẫn ở màn chi tiết).
+- **Toast nằm ngoài environment của SwiftUI** (KVToastKit dựng window riêng), nên nó
+  không thấy `\.locale`. Đó là chỗ **duy nhất** cần `Bundle` của một `.lproj` cụ thể:
+  `LanguageStore.localized(_:)`. `check-l10n.sh` cấm `String(localized:)` ở mọi nơi
+  khác.
+
+### 2. Ngoài View (ViewModel, Domain, Core) — `LocalizedStringResource`
 
 ```swift
 // Core/AppError.swift
@@ -116,16 +150,25 @@ thêm một lớp `variations.plural.{one,other,...}`. Mỗi ngôn ngữ có b�
 Xcode biết ngôn ngữ nào cần dạng nào — đó là lý do nên mở bằng Xcode cho string dạng
 này thay vì viết JSON tay.
 
-## Số, ngày, tiền — không phải việc của catalog
+## Số, ngày, tiền — `Text(value, format:)`, KHÔNG phải `.formatted()`
 
 ```swift
-order.total.formatted(.currency(code: "VND"))
-order.placedAt.formatted(date: .abbreviated, time: .shortened)
+Text(order.total, format: .currency(code: "VND"))          // ✅ theo ngôn ngữ đang chọn
+Text(order.placedAt, format: .dateTime.day().month().year())
+
+Text(order.total.formatted(.currency(code: "VND")))        // ❌ đứng yên
 ```
 
-`.formatted` dùng locale của người dùng: dấu phẩy/dấu chấm, thứ tự ngày/tháng, ký hiệu
-tiền. Tự nối `"\(total) đ"` là hỏng ở 18 ngôn ngữ còn lại. **Đừng** hardcode `Locale`
-trừ khi có lý do nghiệp vụ (ví dụ mã tiền do backend quyết định).
+Cả hai đều "dùng locale", nên nhìn như nhau. Khác nhau ở **lúc nào**:
+`.formatted()` dựng chuỗi ngay tại chỗ bằng `Locale.current` — ngôn ngữ của **máy** —
+còn `Text(value, format:)` để SwiftUI format lúc render, theo `\.locale` của
+environment. Đã thấy tận mắt trên simulator: sau khi đổi app sang tiếng Nhật, cùng một
+đơn hàng hiện `đ250,000` ở list (`Text(value, format:)`) và `250.000 đ` ở màn chi tiết
+(`.formatted()`).
+
+`check-l10n.sh` fail nếu `.formatted(` xuất hiện trong `Features/` hay `DesignSystem/`.
+
+Tự nối `"\(total) đ"` thì hỏng ở cả 19 ngôn ngữ, không chỉ chuyện locale.
 
 ## RTL — tiếng Ả Rập
 
