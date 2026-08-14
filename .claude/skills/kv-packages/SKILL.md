@@ -1,7 +1,7 @@
 ---
 name: kv-packages
 description: >-
-  API đúng và các bẫy đã kiểm chứng của 5 package nội bộ: KVRouterKit 3.2 (điều
+  API đúng và các bẫy đã kiểm chứng của 5 package nội bộ: KVRouterKit 3.5 (điều
   hướng + transition), KVDIKit (dependency injection), KVNetworkit 2.x
   (networking async/await), KVToastKit (toast), KVLoggingKit (log + network
   console). Dùng skill này NGAY khi code chạm tới bất kỳ symbol bắt đầu bằng KV,
@@ -27,18 +27,17 @@ description: >-
 | poll `router.path` trong test | `await router.settle()`, hoặc `KVRouterSpy` | v3.0 thêm `settle()` |
 | `KVAPIClientError.serverMessage(m, code)` | `.serverMessage(message:statusCode:)` | label bắt buộc |
 | `logger.info("token=\(t)")` | `metadata: ["k": .private(t)]` | message string không được redact như metadata |
-| `installGlobally(swizzlingSessionConfigurations: true)` | `install(in: configuration)` | swizzle `protocolClasses` crash trên iOS 26 |
 | capture `var` trong `ToastService {}` | `ToastRecorder` | `post` là `@Sendable`, Swift 6 chặn |
 
 ## Version đang dùng
 
 | Package | Version | Module import |
 |---|---|---|
-| KVRouter | 3.2.1 | `KVRouterKit` · `KVRouterCore` · `KVRouterTesting` |
+| KVRouter | 3.5.0 | `KVRouterKit` · `KVRouterCore` · `KVRouterTesting` |
 | KVNetworkit | 2.0.0 | `KVNetworkit` |
 | KVDIKit | 1.0.0 | `KVDIKit` |
 | KVToastKit | 1.0.0 | `KVToastKit` |
-| KVLoggingKit | 1.0.0 | `KVLoggingKit` + `KVLogging{Local,Security,Network,SwiftUI,Console}` |
+| KVLoggingKit | 1.1.0 | `KVLoggingKit` + `KVLogging{Local,Security,Network,SwiftUI,Console}` |
 
 Nếu `Package.resolved` khác bảng này, tin `Package.resolved` và đọc source trong
 `.build/checkouts/` — đừng tin file này.

@@ -17,7 +17,7 @@ description: >-
 
 1. **Đọc skill `ios-architecture`** nếu chưa. Bảng "file này đặt ở đâu" là thứ
    bạn sẽ cần ở mọi bước.
-2. **Mở `Features/Order/OrderList/` ra soi.** Nó là bản mẫu đã build, test và chạy
+2. **Mở thư mục Features/Order/OrderList (repo template KVAppBase) ra soi.** Nó là bản mẫu đã build, test và chạy
    được. Bắt chước nó; đừng phát minh biến thể.
 3. **Có spec chưa?** Không có thì viết `docs/features/<tên>.md` theo
    `assets/feature-spec.md`, xác nhận với người dùng, rồi mới code. Spec sai thì
@@ -39,7 +39,7 @@ hiện API thiếu field khi UI đã xong.
 | 5 | DTO + mapper | `Data/DTO/` | field optional, `toDomain()` cho default |
 | 6 | Endpoint | `Data/Network/Endpoints/` | khai `cachePolicy` có ý thức |
 | 7 | Repository impl | `Data/Repositories/` | map lỗi qua `perform(_:_:)` |
-| 8 | Stub | `Data/Testing/Stubs.swift` | để làm `testValue` |
+| 8 | Stub | `Data/Testing/` | để làm `testValue` |
 | 9 | DI key | `DI/Dependencies+*.swift` | **kèm `testValue`** |
 | 10 | ViewModel | `Features/<X>/<Screen>/` | `State` + `Action` + `send`, `import KVRouterCore` |
 | 11 | View + view con | `Features/<X>/<Screen>/` | con nhận value + closure, `Equatable` |

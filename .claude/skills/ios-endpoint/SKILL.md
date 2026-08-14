@@ -26,7 +26,7 @@ Mở `Data/Network/Endpoints/OrderEndpoint.swift` và
 | 2 | Case trong enum endpoint | `Data/Network/Endpoints/` |
 | 3 | Method trong protocol | `Domain/Repositories/` |
 | 4 | Implementation, gọi qua `perform(_:_:)` | `Data/Repositories/` |
-| 5 | Stub tương ứng | `Data/Testing/Stubs.swift` |
+| 5 | Stub tương ứng | `Data/Testing/` |
 | 6 | Test qua `KVMockNetworkSession` | `Tests/DataTests/` |
 
 Thứ tự này không tuỳ tiện: bước 3 là chỗ duy nhất `Domain` biết có việc mới, và nó

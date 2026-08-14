@@ -20,7 +20,7 @@ gone — which is the drift `doctor.sh` check 5 exists to catch.
 |---|---|
 | UI | SwiftUI, iOS 16+ |
 | State | `ObservableObject` + one `State` struct + `send(_ action:)` |
-| Navigation | KVRouterKit 3.2 (`KVRouting` port for ViewModels) |
+| Navigation | KVRouterKit 3.5 (`KVRouting` port for ViewModels) |
 | DI | KVDIKit (keys declared only in `DI/`) |
 | Networking | KVNetworkit 2.x (lives in `Data`, errors mapped at that boundary) |
 | Logging | KVLoggingKit (privacy-declared metadata) |

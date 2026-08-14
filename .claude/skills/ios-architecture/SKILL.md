@@ -14,7 +14,7 @@ description: >-
 # Kiến trúc iOS — SwiftUI + MVVM + Clean Architecture
 
 Nguyên tắc số một: **bắt chước màn hàng xóm, không phát minh.** Mở
-`Features/Order/OrderList/` ra soi trước khi viết — nó là bản mẫu đã build và test
+thư mục Features/Order/OrderList trong repo template KVAppBase ra soi trước khi viết — nó là bản mẫu đã build và test
 được. Skill này mô tả *vì sao*; repo thật mới là *cái gì*.
 
 ## Quyết định nhanh: file này đặt ở đâu?

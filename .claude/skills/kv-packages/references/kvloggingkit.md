@@ -1,4 +1,4 @@
-# KVLoggingKit 1.0
+# KVLoggingKit 1.1
 
 ## Product
 
@@ -83,18 +83,15 @@ NetworkLoggingURLProtocol.installGlobally(swizzlingSessionConfigurations: true)
 #endif
 ```
 
-⚠️ **`swizzlingSessionConfigurations: true` crash trên iOS 26.** Nó exchange
-getter `protocolClasses` toàn process, và CFNetwork duyệt mảng trả về gọi
-`+canInitWithTask:` trên từng phần tử:
+`swizzlingSessionConfigurations: true` **đã sửa ở 1.1.0** và đo lại trên iOS
+26.2: bật cờ rồi bắn request qua session tự dựng configuration thì không crash,
+và traffic của session đó vào console thật. Bản 1.0.0 thì crash — nó exchange
+getter `protocolClasses` toàn process bằng một `@objc` method của Swift, mảng
+trả về hỏng, và CFNetwork gọi `+canInitWithTask:` lên chính class configuration.
 
-```
-*** Terminating app due to uncaught exception 'NSInvalidArgumentException',
-reason: '+[NSURLSessionConfiguration canInitWithTask:]: unrecognized selector'
-    -[__NSURLSessionLocal _protocolClassForTask:skipAppSSO:]
-```
-
-Dùng `install(in:)` trên configuration của chính app thay thế — đây là đường
-package tự mô tả là "the explicit, swizzle-free way", và nó đủ dùng:
+Vẫn nên mặc định `install(in:)` trên configuration của chính app: nó hẹp hơn một
+lần exchange toàn process, và đây là đường package tự mô tả là "the explicit,
+swizzle-free way".
 
 ```swift
 let configuration = URLSessionConfiguration.default
@@ -103,6 +100,9 @@ NetworkLoggingURLProtocol.install(in: configuration)
 #endif
 KVAPIClient(session: KVNetworkSession(configuration: configuration), …)
 ```
+
+Bật cờ swizzle khi cần console **thấy cả session app không tự dựng** — ảnh
+Kingfisher, SDK bên thứ ba. Đó là thứ duy nhất nó mua thêm.
 
 `installGlobally()` **không kèm swizzle** vẫn an toàn — nó chỉ
 `URLProtocol.registerClass`, phủ `URLSession.shared`.

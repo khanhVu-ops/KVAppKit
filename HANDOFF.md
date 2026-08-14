@@ -132,7 +132,7 @@ Tất cả đều đã gặp thật trong quá trình dựng. Đừng gặp lạ
 
 | Bẫy | Xử |
 |---|---|
-| `installGlobally(swizzlingSessionConfigurations: true)` **crash iOS 26** — `+[NSURLSessionConfiguration canInitWithTask:]: unrecognized selector` | dùng `install(in: configuration)` trên configuration của chính client; `installGlobally()` không cờ vẫn an toàn |
+| `installGlobally(swizzlingSessionConfigurations: true)` **crash iOS 26** — `+[NSURLSessionConfiguration canInitWithTask:]: unrecognized selector` | **đã sửa ở KVLoggingKit 1.1.0**, base đã pin. Dưới 1.1.0: tắt cờ và dùng `install(in: configuration)`. Lưu ý cờ đó không phải cửa duy nhất — `LogConsole` mặc định capture `.allSessions`, tức là `LogConsole.install()` trần cũng bật swizzle và cũng crash. Nguyên nhân thật ở §4.4 |
 | `log show` không hiện os_log mức info/debug | phải có `--info --debug`, nếu không sẽ tưởng code không chạy |
 | Test bundle không host thì không link được symbol app | `TEST_HOST` phải trỏ app; `App.init` bỏ qua bootstrap khi `AppEnvironment.isRunningTests` |
 | Thêm file mới ở **bất kỳ** folder nào mà chưa `xcodegen generate` | compiler báo "không tìm thấy" dù code có đó |
@@ -332,19 +332,96 @@ rsync -a --exclude .git --exclude .DS_Store /Users/khanhvu/personal/KVAppKit/ .
 **Không** `cp -R KVAppKit/. .` — xem §4.0b: nó copy cả `.git` của kit, và repo app
 thừa hưởng lịch sử lẫn `origin` của kit.
 
-### 4.4 Ba việc nhỏ trong KVRouterKit (không gấp)
+### 4.4 ✅ Xong — KVRouterKit 3.4.0 + 3.5.0, KVLoggingKit 1.1.0 (14/08)
 
-- `KVNavigationTransition` vẫn `@MainActor`, chưa `Sendable` → không nhét được
-  vào type `Sendable`, và vì thế chưa làm được transition mặc định theo route.
-- Registry chưa map route → transition; hiện chỉ map route → view.
-- `kvRoutes` chạy `configure` **một lần**: destination không được capture state
-  thay đổi được. Đáng thêm một dòng cảnh báo vào doc của package.
+Cả bốn việc ở đây đã giao, cộng hai việc lộ ra trong lúc làm. Base đã pin
+`KVRouter from: 3.5.0` và `KVLoggingKit from: 1.1.0` trong `project.yml`.
 
-Và một bug đã báo: `swizzlingSessionConfigurations: true` của KVLoggingKit crash
-trên iOS 26 — là API public có tài liệu. Cơ chế chưa xác minh (nghi
-`class_getInstanceMethod` leo lên superclass nên exchange rơi vào
-`NSURLSessionConfiguration` thay vì subclass private), nhưng bật thì crash, tắt
-thì không.
+| Việc | Kết quả |
+|---|---|
+| `KVNavigationTransition` → `Sendable` | 3.4.0 |
+| Registry map route → transition | 3.4.0 |
+| Doc `kvRoutes` chạy `configure` một lần | 3.4.0 |
+| Crash swizzle iOS 26 | KVLoggingKit 1.1.0 |
+| Back-swipe `.system` (3.3.0 hứa mà chưa giao) | 3.5.0 |
+| Swipe custom dễ vuốt + `interactivePopEdgeWidth` | 3.5.0 |
+| CI cho KVLoggingKit | xong, xanh |
+| Releases liền mạch | xong |
+
+API mới nằm trong `kv-packages/references/kvrouterkit.md` và `kvloggingkit.md`,
+đã cập nhật. Base **chưa dùng** `registerTransition` hay `interactivePopEdgeWidth`
+— nó vẫn để mặc định; hai thứ đó là cửa mở cho app thật, không phải nợ của base.
+
+**Chi tiết đáng giữ, vì mỗi cái là một luật đã học:**
+
+- **Blocker của "transition mặc định theo route" là `case zoom(AnyHashable)`.**
+  `AnyHashable` không `Sendable`, giữ một cái là mất conformance. Cách gỡ đã có
+  sẵn trong chính package (`AnyKVRoute`): giữ existential có ràng buộc, erase
+  muộn — id sống trong box `Hashable & Sendable` và chỉ thành `AnyHashable` ở ba
+  chỗ chạm registry/SwiftUI. Break hẹp: `zoom(sourceID:)` giờ đòi
+  `Hashable & Sendable`.
+- **Transition theo route phủ cả những đường không đi qua `push`.** Nó resolve
+  qua `transitionOverride(for:)` — chỗ duy nhất mọi push/pop/pop-to đã hỏi — nên
+  back swipe, deep link, restored path đều được, miễn phí. Thứ tự: call site →
+  route → host.
+- **`.system` back swipe chết từ 3.3.0 tới 3.4.0, và 3.3.0 ghi là đã sửa.**
+  UIKit tắt `interactivePopGestureRecognizer` chỉ vì delegate *responds to*
+  `navigationController(_:animationControllerFor:from:to:)` — trả gì không quan
+  trọng. Proxy trả `responds(to:)` true vô điều kiện, nên trên `.system` UIKit
+  tưởng delegate cầm transition. Vì thế trả `nil` **không** phải fix, và mọi nỗ
+  lực "enable recognizer mạnh hơn" đều vô ích: nó vẫn đang enabled và ngồi im.
+  Entry 3.3.0 được đánh dấu là sai chứ không viết lại.
+- **Test xanh xuyên qua bug này.** Bảy bridge test khẳng định router vẫn cấp
+  animator đều xanh trong suốt thời gian swipe chết. Và
+  `UIScreenEdgePanGestureRecognizer` của package **không** driven được bằng
+  synthetic touch — im lặng không bao giờ begin — nên automation không phân biệt
+  nổi regression thật với điểm mù của chính nó. Đã đọc nhầm ba lần trước khi chạy
+  cùng kịch bản trên build không sửa để đối chứng.
+- **Swipe custom khó vuốt vì hai nguyên nhân, cái thứ hai mới là cái lạ.** Vùng
+  bắt thuộc UIKit khi còn là `UIScreenEdgePan` (không API nào nới được) — giờ là
+  pan thường, chặn vùng trong `gestureRecognizerShouldBegin`. Và hướng vuốt suy
+  từ **velocity**: một cú kéo chậm gần như không có velocity lúc UIKit hỏi, nên
+  bị từ chối thẳng — swipe chỉ ăn cú flick. Giờ hướng suy từ translation.
+  `interactivePopEdgeWidth` mặc định 44pt. Đánh đổi có thật: pan thường không
+  được UIKit delay touch, content sát mép leading (row cuộn ngang, slider) có
+  thể tranh chấp.
+
+**Crash swizzle — nguyên nhân thật, và nghi vấn cũ là sai.**
+
+Ghi ở đây trước đó: nghi `class_getInstanceMethod` leo superclass nên exchange
+rơi vào `NSURLSessionConfiguration`. **Sai.** `method_exchangeImplementations`
+không có lỗi gì — một exchange với C function đúng kiểu thì sạch, đã kiểm.
+
+Thủ phạm là **thứ thay thế getter**: một `@objc` method của Swift trên
+`NetworkLoggingURLProtocol` trả `[AnyClass]?` bridged. Cài xong nó chạy với
+`self` bound vào một *configuration*, còn thunk của một Swift `@objc` method
+được quyền giả định `self` là instance của class khai nó. Mảng trả về vì thế
+hỏng: protocol class không sống sót qua đường về (đọc lại ra
+`NSURLSessionConfiguration` — không phải subclass của `URLProtocol`, không trả
+lời `+canInitWithTask:` lẫn `+canInitWithRequest:`), và mỗi lần đọc lại chèn
+thêm một entry rác nên list phình vô hạn. CFNetwork hỏi từng entry, nên nó bắn
+selector đó vào một class configuration.
+
+Bản sửa: free function `@convention(c)` trả `NSArray` ở +0 autoreleased — đúng
+contract của một ObjC getter. Install dùng `class_replaceMethod` (thêm method
+vào đúng class được đưa khi implementation là thừa kế, nên không bao giờ sửa
+superclass toàn process); implementation để chain tới được capture **trước** khi
+cài, vì sau đó có một cửa sổ mà getter chỉ trả protocol này và bỏ
+`_NSURLHTTPProtocol` — tức là làm hỏng networking chứ không phải log nó.
+
+Hai thứ investigation lòi ra mà bug report không có:
+
+- **Swizzle chưa từng chạy đúng.** Protocol xuất hiện trong `protocolClasses`
+  **0 lần**, trên iOS 18 y như trên 26. iOS 26 không làm hỏng một tính năng đang
+  chạy — nó biến một cái fail im lặng thành terminate.
+- **Bán kính rộng hơn cái cờ.** `LogConsole` mặc định `.allSessions`, mà scope
+  đó bật swizzle — nên `LogConsole.install()` trần cũng crash. Ai đọc bug report
+  và nghĩ "tôi có bật cờ đâu" là đã bỏ sót đúng nửa số ca.
+
+10 test mới (7 drive bản thay thế qua chain giả — cài thật là process-global,
+không undo được; 3 chạy `installGlobally` end-to-end). Đo hai chiều trên
+simulator iOS 26.2 **và** 18.6: fail trên implementation cũ, pass trên cái mới.
+Package có CHANGELOG đầu tiên, và CI (`.github/workflows/ci.yml`).
 
 ---
 
