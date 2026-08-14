@@ -57,7 +57,7 @@ vì `main`: hai người tạo project cách nhau một tuần mà lấy hai câ
 thì không ai tái lập được lỗi của ai. `v1.1.0` là bản làm mọi tầng gỡ ra được — nền
 cho ba tier ở §4.5.
 
-### KVAppKit — 11/14 skill
+### KVAppKit — 12/14 skill
 
 | Có | Nội dung |
 |---|---|
@@ -71,7 +71,8 @@ cho ba tier ở §4.5.
 | `ios-troubleshoot` | bảng triệu chứng → nguyên nhân của §3 |
 | `ios-review` | quy trình review; luật lấy từ `review-checklist.md` |
 | `project-overview` | quét source sinh `PROJECT_OVERVIEW.md` |
-| `init-base` | SKILL.md + `tools/init-base.sh` |
+| `ios-project` | `project.yml`: configuration, package, entitlement, scheme |
+| `init-base` | SKILL.md + `tools/init-base.sh`, ba tier |
 
 Cộng subagent `swiftui-screen`, command `/init-base`, `AGENTS.md` (canonical),
 `CLAUDE.md` (chỉ `@AGENTS.md`), `.agents/skills` là **symlink** tới
@@ -237,7 +238,7 @@ lý do chúng sống được lâu đến vậy:
   hứa) chỉ áp dụng trong repo kit: README của repo app đến từ KVAppBase và mô tả
   app, bắt nó nói về doctor là bắt sai file.
 
-### 4.1 Ba skill chưa viết
+### 4.1 Hai skill còn lại, cả hai đều bị chặn
 
 **Đã viết trong buổi 13/08 (6)** — `ios-l10n` (xem §4.0), và `ios-troubleshoot` (bảng §3 giờ là skill, không
 còn nằm một mình trong file này), `ios-endpoint`, `api-intake`, `ios-review`,
@@ -256,11 +257,23 @@ phải lệnh tưởng tượng; `ios-endpoint` lấy đúng API của `KVMockNe
 - `figma-intake` — Figma → design token + `DESIGN_TOKENS.md`
 - `figma-screen` — một node Figma → SwiftUI View
 
-**Không bị chặn (1)** — làm được ngay:
+**✅ `ios-project` — viết xong 14/08.** `project.yml`: configuration, giá trị
+build-config, package, entitlement, scheme, folder tầng. Ba thứ đáng ghi vì chúng
+là lỗi im lặng, không phải lỗi build:
 
-- `ios-project` — sửa `project.yml`: thêm configuration, Info.plist key,
-  entitlement, scheme, package. Hiện chỉ có một dòng `xcodegen generate` trong
-  `ios-verify`.
+- **Giá trị build-config là một dây ba mắt** — `settings.configs` → `$(KEY)` trong
+  `Info.plist` → `AppEnvironment`. Quên mắt giữa thì `Bundle.main.object(...)` trả
+  `nil` và code chạy nhánh mặc định: không lỗi build, không lỗi test, chỉ là một cờ
+  không bao giờ bật ở Release.
+- **Hook `PostToolUse` không cứu ở đây.** Nó chỉ generate khi có file `.swift`
+  mới, không nhìn `project.yml` — nên đây là chỗ duy nhất còn phải tự chạy
+  `xcodegen generate`.
+- **Thêm configuration là bốn chỗ**, và chỗ thứ tư là `fastlane/Fastfile`
+  (`STORE_CONFIGURATION`, `WEB_TEST_CONFIGURATION` là hằng số ở đầu file). Config
+  mới không có lane trỏ vào thì chỉ là một dòng yaml.
+
+Còn `figma-intake` và `figma-screen` là hai skill duy nhất chưa viết, cả hai đều
+chặn ở câu hỏi AppSpec MCP ở trên.
 
 ### 4.2 Skill vẫn chưa được nghiệm thu — nhưng giờ có cân
 
@@ -292,15 +305,35 @@ harness sẽ đọc y như "skill không có tác dụng" — kết luận sai �
 ./tools/measure-selftest.sh    # ✓ 4/4 — cái cân phân biệt đúng ba trường hợp trên
 ```
 
-Nhưng `measure-skill.sh` thì dừng ngay ở guard đầu tiên: `cần claude CLI trên PATH`.
-Máy này chạy Claude Code **bản desktop**, và bản desktop không cài CLI —
-`npm ls -g` không có `@anthropic-ai/claude-code`, `which claude` không ra gì. Đây là
-cùng một chỗ tắc của buổi trước nhưng vì lý do khác, nên nói cho rõ để lần sau không
-mất công tìm lại:
+**CLI đã cài — và chỗ tắc đã lùi được một nấc, không phải hết.**
 
 ```bash
-npm i -g @anthropic-ai/claude-code                          # thứ còn thiếu
-./tools/measure-skill.sh --all --in /path/to/app-repo       # rồi cân thật
+npm i -g @anthropic-ai/claude-code   # xong: /opt/homebrew/bin/claude, 2.1.232
+```
+
+Guard `cần claude CLI trên PATH` giờ qua được. Nhưng `claude -p` trả về:
+
+```
+Not logged in · Please run /login
+```
+
+CLI có **auth riêng**, không dùng chung phiên với bản desktop đang chạy — và
+`ANTHROPIC_API_KEY` cũng không có trong môi trường. Login là việc phải làm bằng
+tay, một lần, trong terminal thật (nó mở trình duyệt):
+
+```bash
+claude          # rồi /login
+```
+
+Cộng một cửa nữa ngay sau đó: repo đo nằm ngoài workspace đã tin cậy nên CLI in
+`Ignoring 5 permissions.allow entries … this workspace has not been trusted`.
+Chạy `claude` một lần trong đúng thư mục đó và nhận dialog, hoặc đặt
+`projects["<đường dẫn>"].hasTrustDialogAccepted: true` trong `~/.claude.json`.
+
+Sau khi login xong thì cân thật:
+
+```bash
+./tools/measure-skill.sh --all --in /path/to/app-repo
 ```
 
 `--in` phải là một repo **đã init-base** (có `.claude/skills` + `project.yml`): đo
@@ -479,13 +512,16 @@ màu đỏ. Giờ nó đếm riêng và in vàng. `doctor-selftest.sh` vẫn 10/
 
 Câu mở đầu gợi ý:
 
-> Đọc `/Users/khanhvu/personal/KVAppKit/HANDOFF.md`. Tiếp tục từ §4.2: cài
-> `@anthropic-ai/claude-code`, dựng một repo app bằng `init-base`, rồi chạy
-> `measure-skill.sh --all` để cân `kv-packages` và `ios-architecture`. Xong thì
-> viết skill `ios-project` (§4.1).
+> Đọc `/Users/khanhvu/personal/KVAppKit/HANDOFF.md`. Tiếp tục từ §4.2: tôi đã
+> `claude /login` trong terminal rồi. Dựng một repo app bằng `init-base --keep-demo`,
+> rồi chạy `measure-skill.sh --all --in <repo đó>` để cân `kv-packages` và
+> `ios-architecture`.
 
-Việc chưa xong, theo thứ tự: **cân skill** (§4.2 — cần CLI) → **skill `ios-project`**
-(§4.1, không bị chặn) → **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
+Việc chưa xong, theo thứ tự: **cân skill** (§4.2 — CLI đã cài, chặn ở `/login`,
+là việc phải làm bằng tay) → **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
+
+Case của `measure` nhắc tới luồng Order, nên repo để đo phải dựng bằng
+`--keep-demo`; tier tool không có `OrderRoute` nào để model bắt chước.
 
 Trước khi sửa gì trong KVAppBase, chạy `./tools/verify.sh` để biết điểm xuất phát
 là xanh. Sau khi sửa, chạy lại — và **mở app trên simulator xem đúng màn vừa

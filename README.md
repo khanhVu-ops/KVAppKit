@@ -85,6 +85,7 @@ project cách nhau một tuần mà lấy hai cây source khác nhau thì không
 | `ios-troubleshoot` | một lệnh vừa fail, hoặc app cư xử lạ |
 | `ios-review` | review diff theo luật của repo |
 | `project-overview` | quét repo, sinh `PROJECT_OVERVIEW.md` |
+| `ios-project` | `project.yml`: configuration, package, entitlement, scheme |
 | `init-base` | repo mới |
 
 Cộng subagent `swiftui-screen` cho việc scaffold một màn (model rẻ, tool giới hạn).

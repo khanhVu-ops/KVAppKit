@@ -172,6 +172,7 @@ deliberately does not repeat.
 | A command failed, or the app misbehaves in a way that smells like the environment | `ios-troubleshoot` |
 | Review a diff against the repo's own rules | `ios-review` |
 | Map what this repo currently contains | `project-overview` |
+| Anything that would otherwise be clicked in Xcode — configuration, package, entitlement | `ios-project` |
 | Brand-new repository | `init-base` |
 
 `ios-troubleshoot` is worth loading *before* theorising about a failure: most of
