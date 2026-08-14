@@ -146,21 +146,41 @@ fi
 if [ -z "$source_root" ]; then
     skip "path trong doc — không thấy project.yml (dùng --against DIR)"
 else
-    missing=""
+    missing=""; absent_layer=""
     while read -r ref; do
         [ -n "$ref" ] || continue
         file="${ref%%|*}"; path="${ref#*|}"
         # Hai gốc: doc của kit nhắc path của kit (`tools/init-base.sh`) lẫn path của
         # app (`Features/Order/...`), và cả hai đều đúng.
-        [ -e "$source_root/$path" ] || [ -e "$path" ] \
-            || missing="$missing$file → $path"$'\n'
+        [ -e "$source_root/$path" ] || [ -e "$path" ] && continue
+        # App tool không có `Data/` chút nào, app không auth không có
+        # `Domain/Entities/`. Doc mô tả một tầng app này không dùng thì không
+        # phải doc sai — nó chỉ đang nói về tier khác. Đếm riêng, không tính đỏ:
+        # bắt nó đỏ trong mọi repo tool là dạy người ta bỏ qua màu đỏ.
+        layer="${path%%/*}"
+        if [ ! -d "$source_root/$layer" ] && [ ! -d "$layer" ]; then
+            absent_layer="$absent_layer$file → $path"$'\n'
+        else
+            missing="$missing$file → $path"$'\n'
+        fi
     done < <(grep -rnoE '`(Core|Domain|Data|DI|DesignSystem|Features|App|Tests|tools)/[A-Za-z0-9_./+-]*`' \
                 --include='*.md' --exclude=HANDOFF.md . \
              | sed -E 's/^([^:]+):[0-9]+:`(.*)`$/\1|\2/' | sort -u)
-    if [ -n "$missing" ]; then
+    if [ -z "$missing" ]; then
+        pass "mọi path repo trong doc đều tồn tại"
+    elif [ -f config/base-template.env ]; then
         fail "doc trỏ vào path không tồn tại" "$missing"
     else
-        pass "mọi path repo trong doc đều tồn tại"
+        # Repo app. Luật này sinh ra để canh drift giữa doc của kit và cây source
+        # của base — ở đó mọi path đều phải tồn tại. Trong một repo app thì phần
+        # lớn path mà skill nhắc là **chỗ sẽ tạo file**, không phải chỗ đã có:
+        # `Domain/Repositories/` chỉ mọc lên khi có repository đầu tiên. Bắt nó đỏ
+        # ở đây là đỏ trong mọi repo app ngay từ phút đầu, và một màu đỏ luôn bật
+        # thì không ai đọc nữa.
+        skip "$(grep -c . <<< "$missing") path trong doc chưa tồn tại — repo app, phần lớn là chỗ sẽ tạo file"
+    fi
+    if [ -n "$absent_layer" ]; then
+        skip "$(grep -c . <<< "$absent_layer") path thuộc tầng app này không có (tier khác)"
     fi
 fi
 

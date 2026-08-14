@@ -10,25 +10,49 @@ description: >-
 
 # Khởi tạo KVAppBase
 
-Cần tên app và bundle id. Thiếu cái nào thì hỏi, đừng đoán.
+Cần tên app, bundle id, **và tier**. Thiếu cái nào thì hỏi, đừng đoán.
 
 1. **Kiểm tra repository trống.** Chỉ tiếp tục khi root chỉ có kit (và có thể có
    `.git`, `README.md`, `.gitignore`) — không có `App/`, `Packages/`,
    `project.yml`, hay `.xcodeproj`.
 
-2. Chạy:
+2. **Chốt tier — app này có gọi backend không, có đăng nhập không.** Đây là câu
+   phải hỏi, không phải câu suy từ tên app: "Photo Editor" có thể có tài khoản,
+   "Admin Tool" có thể không gọi API nào.
+
+   | Tier | Cờ | App được gì |
+   |---|---|---|
+   | tool | *(không cờ)* | không network, không đăng nhập |
+   | api | `--with-api` | `Data/`, `APIClientFactory`, KVNetworkit |
+   | auth | `--with-auth` | thêm màn sign-in, keychain, `SessionController`, guard |
+
+   `--with-auth` bao hàm `--with-api` (token lấy từ đâu nếu không có API). Thêm
+   `--keep-demo` khi người ta muốn giữ luồng Order mẫu để đọc — nó kéo theo cả
+   hai tầng.
+
+   **Mặc định là tier tool, và mặc định đó có chủ đích:** tầng thêm vào thì dễ,
+   gỡ ra thì không. Một app tool lỡ mang tầng auth sẽ mang nó mãi mãi. Nhưng
+   đoán thiếu cũng đắt: dựng lại `SignInView` đã nối use case, keychain và
+   `SessionController` bằng tay tốn hơn nhiều so với hỏi một câu. Nên **hỏi**.
+
+3. Chạy:
    ```bash
-   ./tools/init-base.sh --name "<App Name>" --bundle-id <com.company.app>
+   ./tools/init-base.sh --name "<App Name>" --bundle-id <com.company.app> [--with-api|--with-auth]
    ```
    Chỉ truyền `--source` / `--ref` khi người dùng yêu cầu version khác.
 
-3. **Đọc output của script** và báo lại: source + ref KVAppBase đã dùng, bundle id,
-   những gì đã đổi tên.
+4. **Đọc output của script** và báo lại: source + ref KVAppBase đã dùng, tier,
+   bundle id, những gì đã đổi tên. Script in cả số key l10n nó xoá vì không còn
+   code nào dùng — nói con số đó ra, đừng nuốt.
 
-4. Verify ngay: `./tools/verify.sh`. Một base vừa khởi tạo mà không build được là
+5. Verify ngay: `./tools/verify.sh`. Một base vừa khởi tạo mà không build được là
    thứ phải sửa trước khi viết dòng code đầu tiên.
 
-5. Sau đó cập nhật `AGENTS.md`: mục "App Features" và bảng module để chúng mô tả
+   `check-arch.sh` sẽ **skip** vài luật ở tier tool và api ("app không có tầng
+   tương ứng"), và `doctor.sh` in vài dòng vàng về path chưa tồn tại. Cả hai là
+   đúng, không phải lỗi cần sửa.
+
+6. Sau đó cập nhật `AGENTS.md`: mục "App Features" và bảng module để chúng mô tả
    app thật, không còn là template. **Rule file mà mô tả sai cây source là cách
    base project trước đó đã trôi** — agent đọc `CLAUDE.md` sẽ bị dạy sai trước khi
    kịp load skill nào.

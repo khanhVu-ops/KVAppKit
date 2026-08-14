@@ -27,20 +27,45 @@ Rồi trong Claude Code:
 Hoặc chạy thẳng:
 
 ```bash
-./tools/init-base.sh --name "My App" --bundle-id com.company.myapp --verify
+./tools/init-base.sh --name "My App" --bundle-id com.company.myapp --with-auth --verify
 ```
 
-Script sẽ: kéo KVAppBase theo ref đã pin → copy source vào → đổi tên module,
-bundle id, tên app → giữ nguyên `AGENTS.md`, `CLAUDE.md` và toàn bộ skill của kit
-→ báo rõ source/ref đã dùng.
+Script sẽ: kéo KVAppBase theo ref đã pin → copy source vào → **cắt về đúng tier**
+→ đổi tên module, bundle id, tên app → giữ nguyên `AGENTS.md`, `CLAUDE.md` và
+toàn bộ skill của kit → báo rõ source/ref đã dùng.
+
+## Ba tier
+
+Template mang sẵn network, đăng nhập và một luồng mẫu. Phần lớn app không cần cả
+ba, và **tầng thừa không nằm im**: nó vào rule file, vào review, vào đầu người
+mới đọc repo.
+
+| Tier | Cờ | Có gì |
+|---|---|---|
+| tool | *(không cờ)* | không network, không đăng nhập. `RootView` trống |
+| api | `--with-api` | `Data/`, `APIClientFactory`, KVNetworkit |
+| auth | `--with-auth` | thêm sign-in, keychain, `SessionController`, `AuthGuardMiddleware` |
+
+`--with-auth` bao hàm `--with-api`. `--keep-demo` giữ nguyên luồng Order mẫu (kéo
+theo cả hai tầng) — để đọc, không phải để ship.
+
+Mặc định là tier **tool** vì tầng thêm vào dễ hơn gỡ ra: một app tool lỡ mang tầng
+auth thì tầng đó ở lại mãi. Chọn nhầm theo hướng ngược lại cũng không rẻ, nên
+`/init-base` được dặn phải hỏi chứ không suy từ tên app.
+
+Tier là **tập file**, gần như không phải nội dung file — cắt tier chỉ là `rm`, cộng
+bốn file nằm trong `config/overlays/` chép đè (`RootView`, `AppRoutes`, `MyApp`,
+`AppDeepLink`). Mỗi bản copy trong overlay là một chỗ có thể trôi khỏi base; quá
+năm sáu file là dấu hiệu nên tách hẳn một repo skeleton.
 
 Chỉ dùng cho repo mới. Nó từ chối chạy nếu đã có `App/`, `Packages/`,
 `project.yml` hay `.xcodeproj`, để không ghi đè mất code.
 
 ## Chọn version KVAppBase
 
-`config/base-template.env`. Khi KVAppBase có release ổn định, pin theo tag thay vì
-`main`:
+`config/base-template.env` pin theo **tag**, không phải `main`: hai người tạo
+project cách nhau một tuần mà lấy hai cây source khác nhau thì không ai tái lập
+được lỗi của ai. Hiện pin `v1.1.0`. Lấy ref khác cho một lần chạy:
 
 ```bash
 ./tools/init-base.sh --name "My App" --bundle-id com.company.myapp --ref v1.0.0
@@ -76,6 +101,7 @@ CLAUDE.md              @AGENTS.md + trỏ skill
 tools/init-base.sh     script khởi tạo
 tools/doctor.sh        kiểm rule/skill còn nói đúng sự thật
 config/                repository + version KVAppBase
+config/overlays/       bốn file mà mỗi tier cần một bản khác nhau
 ```
 
 ## Kiểm sức khoẻ của kit

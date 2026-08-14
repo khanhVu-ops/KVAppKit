@@ -11,10 +11,18 @@ usage() {
   cat <<'EOF'
 Usage: ./tools/init-base.sh --name "App Name" --bundle-id com.company.app [options]
 
+  --with-api     App có gọi backend. Giữ Data/, APIClientFactory, KVNetworkit.
+  --with-auth    App có đăng nhập. Bao hàm --with-api, thêm keychain + session.
+  --keep-demo    Giữ nguyên màn Order/SignIn của template (để đọc, không để ship).
+
   --source URL   Repository KVAppBase khác.
   --ref REF      Branch hoặc tag khác.
   --verify       Chạy tools/verify.sh sau khi khởi tạo.
   --help
+
+Không cờ nào = app tool: không network, không đăng nhập. Đó là mặc định vì nó là
+thứ dễ thêm vào nhất và khó gỡ ra nhất — một app tool mang sẵn tầng auth thì
+tầng đó sẽ ở lại mãi.
 EOF
 }
 
@@ -27,12 +35,16 @@ config="$kit_root/config/base-template.env"
 source "$config"
 
 app_name=""; bundle_id=""; verify=false
+with_api=false; with_auth=false; keep_demo=false
 source_repo="${KVAPP_BASE_REPOSITORY:-}"; base_ref="${KVAPP_BASE_REF:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --name)      app_name="${2:-}"; shift 2 ;;
     --bundle-id) bundle_id="${2:-}"; shift 2 ;;
+    --with-api)  with_api=true; shift ;;
+    --with-auth) with_auth=true; shift ;;
+    --keep-demo) keep_demo=true; shift ;;
     --source)    source_repo="${2:-}"; shift 2 ;;
     --ref)       base_ref="${2:-}"; shift 2 ;;
     --verify)    verify=true; shift ;;
@@ -40,6 +52,16 @@ while [[ $# -gt 0 ]]; do
     *)           fail "tham số lạ: $1" ;;
   esac
 done
+
+# Đăng nhập mà không có API là tổ hợp không tồn tại — token lấy từ đâu.
+$with_auth && with_api=true
+# Demo *là* bản đầy đủ: nó đang chứng minh cả hai tầng còn chạy.
+if $keep_demo; then with_api=true; with_auth=true; fi
+
+if $with_auth;  then tier="auth"
+elif $with_api; then tier="api"
+else                 tier="tool"
+fi
 
 [[ -n "$app_name" ]]  || fail "--name là bắt buộc"
 [[ -n "$bundle_id" ]] || fail "--bundle-id là bắt buộc"
@@ -94,6 +116,176 @@ rsync -a \
   --exclude '.agents' --exclude 'config' \
   --exclude 'tools/init-base.sh' \
   "$tmp/base/" "$kit_root/"
+
+# ---------------------------------------------------------------------------
+# Cắt template về đúng tier.
+#
+# Nguyên tắc: **tier là tập file, không phải nội dung file.** Gần như mọi khác
+# biệt giữa ba tier là một file có mặt hay không, nên ở đây chỉ có `rm`. Bốn file
+# không chịu được quy tắc đó — mọi tier đều cần chúng, với nội dung khác nhau — nên
+# chúng sống trong config/overlays/ và được chép đè sau khi xoá:
+#
+#   shared/    AppDeepLink            — mọi tier
+#   auth/      RootView · AppRoutes   — tier auth
+#   no-auth/   RootView · AppRoutes · MyApp — tier tool và api
+#
+# Mỗi bản copy trong overlay là một chỗ có thể trôi khỏi base. Bốn thì còn canh
+# bằng mắt được; nếu con số này bò lên quá năm sáu, đó là dấu hiệu nên tách hẳn
+# một repo skeleton chứ không vá bằng overlay nữa.
+# ---------------------------------------------------------------------------
+strip() {
+  local path
+  for path in "$@"; do rm -rf "$kit_root/$path"; done
+}
+
+if ! $keep_demo; then
+  printf 'Tier: %s\n' "$tier"
+
+  # Demo là **luồng Order** — màn hình mẫu và mọi thứ chỉ tồn tại để phục vụ nó.
+  # Luồng Auth thì không: nó ở lại cùng tier auth, vì một màn đăng nhập đã nối
+  # sẵn use case, keychain và SessionController thì sửa cho khớp backend rẻ hơn
+  # nhiều so với dựng lại từ đầu.
+  strip Features/Order \
+        Domain/Entities/Order.swift Domain/Entities/Order+Samples.swift \
+        Domain/Repositories/OrderRepositoryProtocol.swift \
+        Data/DTO/OrderDTO.swift Data/Repositories/OrderRepository.swift \
+        Data/Network/Endpoints/OrderEndpoint.swift Data/Testing/OrderStubs.swift \
+        DI/Dependencies+Order.swift \
+        Tests/DataTests/OrderRepositoryTests.swift \
+        Tests/FeatureTests/OrderDetailViewModelTests.swift \
+        Tests/FeatureTests/OrderListViewModelTests.swift
+
+  # Auth: màn đăng nhập, keychain, session, guard, refresh token.
+  if ! $with_auth; then
+    strip Features/Auth \
+          App/Session App/Bootstrap/AppBootstrap+Tokens.swift \
+          App/Navigation/Middlewares/AuthGuardMiddleware.swift \
+          Domain/Entities Domain/UseCases Domain/Repositories \
+          Domain/Services/TokenStoring.swift \
+          Data/Local Data/Network/Interceptors \
+          Data/DTO Data/Repositories Data/Testing Data/Network/Endpoints \
+          DI/Dependencies+Auth.swift DI/Dependencies+Session.swift \
+          Tests/DomainTests Tests/FeatureTests
+  fi
+
+  # API: cả tầng Data biến mất, và KVNetworkit không còn được link.
+  if ! $with_api; then
+    strip Data DI/Dependencies+Network.swift Tests/DataTests
+  fi
+
+  rsync -a "$kit_root/config/overlays/shared/" "$kit_root/"
+  if $with_auth; then
+    rsync -a "$kit_root/config/overlays/auth/" "$kit_root/"
+  else
+    rsync -a "$kit_root/config/overlays/no-auth/" "$kit_root/"
+  fi
+
+  # Luật 9 của check-arch: folder rỗng là một lời khai về kiến trúc không còn
+  # đúng. `-delete` chạy depth-first, nên folder cha rỗng đi vì con vừa bị xoá
+  # cũng bị dọn trong cùng một lượt.
+  find "$kit_root"/{Core,Domain,Data,DI,DesignSystem,Features,App,Tests} \
+    -type d -empty -delete 2>/dev/null || true
+
+  # project.yml: chỉ tier tool phải sửa — nó là tier duy nhất không link
+  # KVNetworkit và không còn folder Data/ để khai trong `sources`.
+  if ! $with_api; then
+    perl -0pi -e 's/^  KVNetworkit:\n(?:    .*\n)+//m'          "$kit_root/project.yml"
+    perl -0pi -e 's/^      - package: KVNetworkit\n        product: KVNetworkit\n//mg' "$kit_root/project.yml"
+    perl -0pi -e 's/^      - path: Data\n//m'                   "$kit_root/project.yml"
+  fi
+
+  # README: luật 10 so *tên folder* đầu dòng với đĩa, nên dòng Data/ phải đi khi
+  # folder đi. Phần mô tả thì luật không đọc — nhưng một README kể về `Order/`
+  # trong repo không có `Order/` dạy sai đúng cái mà luật 10 sinh ra để chặn.
+  readme="$kit_root/README.md"
+  perl -pi -e 's|^Features/.*|Features/       một folder là một luồng, không phải một màn|' "$readme"
+  perl -pi -e 's|^App/.*|App/            entry · Navigation · Bootstrap · Resources|'                         "$readme"
+  domain_line='Domain/         Services (port) — protocol mà app định nghĩa, Data đi hiện thực'
+  if $with_auth; then
+    perl -pi -e 's|^App/.*|App/            entry · Navigation · Bootstrap · Session · Resources|'  "$readme"
+    perl -pi -e 's|^Tests/.*|Tests/          CoreTests · DomainTests · DataTests · FeatureTests|'  "$readme"
+    perl -pi -e 's|^Data/.*|Data/           DTO · Network/{Endpoints,Interceptors} · Mapping · Local · Repositories · Testing|' "$readme"
+    perl -pi -e 's|^Features/.*|Features/       Auth/          một folder là một luồng, không phải một màn|' "$readme"
+    domain_line='Domain/         Entities · Repository protocol · Services (port) · UseCase'
+  elif $with_api; then
+    perl -pi -e 's|^Tests/.*|Tests/          CoreTests · DataTests|' "$readme"
+    perl -pi -e 's|^Data/.*|Data/           Network · Mapping|'      "$readme"
+  else
+    domain_line='Domain/         Services (port) — protocol thuần, không framework'
+    perl -pi -e 's|^Tests/.*|Tests/          CoreTests|' "$readme"
+    perl -0pi -e 's|^Data/.*\n||m'                       "$readme"
+  fi
+  DOMAIN_LINE="$domain_line" perl -pi -e 's|^Domain/.*|$ENV{DOMAIN_LINE}|' "$readme"
+
+  # Mục "Có gì trong này" của base kể về slice demo. Trong repo app nó vừa sai vừa
+  # là thứ người ta đọc đầu tiên — và `doctor.sh` bắt được nó, vì nó nhắc
+  # `Features/Order` bằng backtick.
+  # Heredoc có delimiter trong nháy đơn: nội dung không bị shell diễn giải. Bản
+  # đầu dùng chuỗi nháy kép và backtick trong đó thành command substitution —
+  # shell đi *chạy* `App/RootView.swift`, `set -e` giết script giữa chừng, và
+  # bước dọn cuối cùng không bao giờ tới. Triệu chứng là repo app còn nguyên
+  # `config/` và `HANDOFF.md` của kit, cách xa nguyên nhân.
+  blurb="$(cat <<'BLURB_COMMON'
+## Có gì trong này
+
+- **`Core`** + **`DesignSystem`** — `Loadable`, `AlertState`, `AppError`, và bộ
+  modifier/component dùng chung: `onFirstAppear`, `alert(_:onDismiss:)`,
+  `cardStyle`, `dismissKeyboardOnTap`, `LoadableContent`, `RemoteImage`.
+- **19 ngôn ngữ** đã dựng sẵn, đổi được ngay trong app.
+- **11 luật kiến trúc** + `./tools/verify.sh` (self-test → build → test).
+BLURB_COMMON
+)"
+
+  case "$tier" in
+    tool) blurb="$blurb$(cat <<'BLURB_TOOL'
+
+
+Chưa có màn nào. `App/RootView.swift` là chỗ bắt đầu.
+BLURB_TOOL
+)" ;;
+    api) blurb="$blurb$(cat <<'BLURB_API'
+- **`Data`** — `APIClientFactory` (interceptor có thứ tự), và map lỗi transport
+  về `AppError` ở đúng một chỗ.
+
+Chưa có màn nào. `App/RootView.swift` là chỗ bắt đầu.
+BLURB_API
+)" ;;
+    auth) blurb="$blurb$(cat <<'BLURB_AUTH'
+- **`Data`** — `APIClientFactory`, refresh token, keychain, map lỗi về `AppError`.
+- **`Features/Auth`** — sign-in đã nối use case, keychain và `SessionController`;
+  sửa endpoint và DTO cho khớp backend là chạy được.
+
+Màn sau khi đăng nhập là chỗ trống có chủ đích — xem `App/RootView.swift`.
+BLURB_AUTH
+)" ;;
+  esac
+
+  BLURB="$blurb" perl -CSD -0pi -e 's/^## Có gì trong này\n.*?(?=^## )/$ENV{BLURB}\n/ms' "$readme"
+
+  # .strings: key của demo không vi phạm luật nào — check-l10n đi từ code sang
+  # bảng, không ngược lại — nhưng để lại 38 key cho một app chưa có màn nào là
+  # giao rác. Chỉ xoá key không còn file .swift nào nhắc tới: một key còn được
+  # nhắc ở bất kỳ đâu đều được giữ, nên bước này không bao giờ làm app mất chữ.
+  dead=""
+  while IFS= read -r key; do
+    [[ -n "$key" ]] || continue
+    grep -rqF "$key" --include='*.swift' "$kit_root" 2>/dev/null || dead="$dead$key"$'\n'
+  done < <(perl -ne 'print "$1\n" if /^"(.+?)" = /' "$kit_root/App/Resources/en.lproj/Localizable.strings")
+
+  if [[ -n "$dead" ]]; then
+    while IFS= read -r key; do
+      [[ -n "$key" ]] || continue
+      # Xoá dòng key, kèm dòng comment ngay trên nó nếu có.
+      KEY="$key" perl -CSD -0pi -e '
+        my $k = quotemeta $ENV{KEY};
+        s{(?:^/\*[^\n]*\*/\n)?^"$k" = "(?:[^"\\]|\\.)*";\n}{}m;
+        s/\n{3,}/\n\n/g;
+      ' "$kit_root"/App/Resources/*.lproj/Localizable.strings
+    done <<< "$dead"
+    printf 'Đã xoá %s key l10n không còn code nào dùng (× 19 ngôn ngữ)\n' \
+      "$(grep -c . <<< "$dead")"
+  fi
+fi
 
 # Base tự giới thiệu là template trong một khối có marker; repo mới thì không phải.
 perl -0pi -e 's/<!-- template-only:start -->.*?<!-- template-only:end -->\n\n?//s' "$kit_root/README.md"

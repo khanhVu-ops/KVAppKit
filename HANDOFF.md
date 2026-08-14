@@ -11,7 +11,7 @@ Cập nhật: 2026-08-14.
 ## 1. Hai repo
 
 ```
-/Users/khanhvu/personal/KVAppBase   template — app chạy được   73a5c56
+/Users/khanhvu/personal/KVAppBase   template — app chạy được   01eef1f (v1.1.0)
 /Users/khanhvu/personal/KVAppKit    kit rule + skill           (xem git log)
 ```
 
@@ -46,15 +46,16 @@ cd /Users/khanhvu/personal/KVAppBase && ./tools/verify.sh
 
 Nó chạy: 11 luật kiến trúc → 12 self-test cho chính các luật đó → `check-l10n.sh`
 (38 key × 19 ngôn ngữ, baseline **còn 0**) → self-test cho nó → xcodegen → build +
-22 test. Trạng thái hiện tại (14/08): **tất cả xanh**.
+30 test. Trạng thái hiện tại (14/08): **tất cả xanh**.
 
 Đăng nhập trong Debug: **email hợp lệ bất kỳ + mật khẩu ≥ 6 ký tự**
 (`a@b.com` / `123456`). Debug dùng fixtures qua cờ `USES_STUB_BACKEND`; đặt `NO`
 trong `project.yml` ngay khi có API thật.
 
-Đã tag **`v1.0.0`** tại `73a5c56`, và `config/base-template.env` pin đúng tag đó thay
+Đã tag **`v1.1.0`** tại `01eef1f`, và `config/base-template.env` pin đúng tag đó thay
 vì `main`: hai người tạo project cách nhau một tuần mà lấy hai cây source khác nhau
-thì không ai tái lập được lỗi của ai.
+thì không ai tái lập được lỗi của ai. `v1.1.0` là bản làm mọi tầng gỡ ra được — nền
+cho ba tier ở §4.5.
 
 ### KVAppKit — 11/14 skill
 
@@ -422,6 +423,55 @@ Hai thứ investigation lòi ra mà bug report không có:
 không undo được; 3 chạy `installGlobally` end-to-end). Đo hai chiều trên
 simulator iOS 26.2 **và** 18.6: fail trên implementation cũ, pass trên cái mới.
 Package có CHANGELOG đầu tiên, và CI (`.github/workflows/ci.yml`).
+
+### 4.5 ✅ Xong — ba tier cho init-base (14/08)
+
+Template mang sẵn network, đăng nhập và luồng Order mẫu. Phần lớn app không cần
+cả ba, và **tầng thừa không nằm im**: nó vào `AGENTS.md`, vào review, vào đầu
+người mới đọc repo. `init-base` giờ cắt template về đúng tier.
+
+| Tier | Cờ | Còn gì |
+|---|---|---|
+| tool | *(không cờ)* | không network, không đăng nhập |
+| api | `--with-api` | `Data/`, `APIClientFactory`, KVNetworkit |
+| auth | `--with-auth` | thêm sign-in, keychain, `SessionController`, guard |
+
+Cộng `--keep-demo` giữ nguyên luồng Order. `--with-auth` bao hàm `--with-api`.
+Mặc định là **tool**: tầng thêm vào dễ hơn gỡ ra. Nhưng đoán thiếu cũng đắt, nên
+skill `init-base` và `/init-base` được dặn **hỏi**, không suy từ tên app.
+
+**Nguyên tắc: tier là tập file, không phải nội dung file.** Nhờ vậy bước cắt gần
+như chỉ có `rm`. Bốn file không chịu được quy tắc đó — `RootView`, `AppRoutes`,
+`MyApp`, `AppDeepLink` — nằm trong `config/overlays/{shared,auth,no-auth}/` và
+chép đè sau khi xoá. Mỗi bản copy là một chỗ có thể trôi khỏi base; quá năm sáu
+file thì nên tách hẳn repo skeleton chứ đừng vá tiếp bằng overlay.
+
+Để làm được thế, KVAppBase `v1.1.0` phải gỡ ba chỗ tự nhận biết tầng khác:
+`AuthGuardMiddleware` giữ `switch` liệt kê `OrderRoute` (giờ route tự khai
+`RequiresAuthentication`, đích inject vào), `APIClientFactory` dựng sẵn
+interceptor auth (giờ là tham số, vị trí trong chuỗi vẫn cố định), và
+`clearTokensOnFirstLaunch` nằm chung file với bootstrap chung.
+
+**Nghiệm thu: cả bốn đường đã chạy thật**, mỗi đường là một repo riêng dựng bằng
+`rsync` kit → `init-base.sh` → `verify.sh`:
+
+| | test | ghi chú |
+|---|---|---|
+| tool | 6 xanh | 2 luật arch skip "app không có tầng tương ứng" |
+| api | 8 xanh | |
+| auth | 13 xanh | |
+| `--keep-demo` | 30 xanh | bằng đúng base — không mất test nào |
+
+Và **mở app thật**, vì test xanh không chứng minh màn hình hiện ra: tier tool ra
+`RootView` trống, tier auth ra `SignInView` → đăng nhập `a@b.com`/`123456` → ra
+placeholder có nút Sign out. Đúng bước đó bắt được một lỗi không test nào thấy —
+nút `.primary` giãn hết chiều ngang mà placeholder không có padding, nên nút chạm
+sát hai mép trong khi `SignInView` ngay trước đó có lề `Spacing.l`. Hai màn này
+thay nhau ở root nên lệch lề là thấy ngay lúc đăng nhập xong.
+
+`doctor.sh` cũng phải học tier: một path trong doc thuộc tầng app này không có
+thì không phải doc sai, và bắt nó đỏ trong mọi repo tool là dạy người ta bỏ qua
+màu đỏ. Giờ nó đếm riêng và in vàng. `doctor-selftest.sh` vẫn 10/10.
 
 ---
 
