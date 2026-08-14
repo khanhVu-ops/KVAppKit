@@ -173,6 +173,9 @@ deliberately does not repeat.
 | Review a diff against the repo's own rules | `ios-review` |
 | Map what this repo currently contains | `project-overview` |
 | Anything that would otherwise be clicked in Xcode — configuration, package, entitlement | `ios-project` |
+| A Figma link arrives — tokens and components before any screen | `figma-intake` |
+| Design has to become a reviewable spec, a test spec, and a task board | `figma-spec` |
+| One Figma node becomes one SwiftUI screen | `figma-screen` |
 | Brand-new repository | `init-base` |
 
 `ios-troubleshoot` is worth loading *before* theorising about a failure: most of

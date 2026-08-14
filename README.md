@@ -86,6 +86,9 @@ project cách nhau một tuần mà lấy hai cây source khác nhau thì không
 | `ios-review` | review diff theo luật của repo |
 | `project-overview` | quét repo, sinh `PROJECT_OVERVIEW.md` |
 | `ios-project` | `project.yml`: configuration, package, entitlement, scheme |
+| `figma-intake` | design → token + component, **trước khi** code màn nào |
+| `figma-spec` | Figma → feature spec → (duyệt) → test spec → `TASKS.md` |
+| `figma-screen` | một node Figma → một màn SwiftUI, ảnh vector vào asset |
 | `init-base` | repo mới |
 
 Cộng subagent `swiftui-screen` cho việc scaffold một màn (model rẻ, tool giới hạn).

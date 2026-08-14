@@ -57,7 +57,7 @@ vì `main`: hai người tạo project cách nhau một tuần mà lấy hai câ
 thì không ai tái lập được lỗi của ai. `v1.1.0` là bản làm mọi tầng gỡ ra được — nền
 cho ba tier ở §4.5.
 
-### KVAppKit — 12/14 skill
+### KVAppKit — 15 skill, đủ bộ
 
 | Có | Nội dung |
 |---|---|
@@ -72,6 +72,9 @@ cho ba tier ở §4.5.
 | `ios-review` | quy trình review; luật lấy từ `review-checklist.md` |
 | `project-overview` | quét source sinh `PROJECT_OVERVIEW.md` |
 | `ios-project` | `project.yml`: configuration, package, entitlement, scheme |
+| `figma-intake` | Figma → token + component, cửa chặn trước khi code màn |
+| `figma-spec` | spec → cổng duyệt → test spec → `TASKS.md` có link node |
+| `figma-screen` | một node → một màn SwiftUI, ảnh vector vào asset |
 | `init-base` | SKILL.md + `tools/init-base.sh`, ba tier |
 
 Cộng subagent `swiftui-screen`, command `/init-base`, `AGENTS.md` (canonical),
@@ -238,7 +241,7 @@ lý do chúng sống được lâu đến vậy:
   hứa) chỉ áp dụng trong repo kit: README của repo app đến từ KVAppBase và mô tả
   app, bắt nó nói về doctor là bắt sai file.
 
-### 4.1 Hai skill còn lại, cả hai đều bị chặn
+### 4.1 ✅ Đủ 15 skill — ba skill Figma đã viết
 
 **Đã viết trong buổi 13/08 (6)** — `ios-l10n` (xem §4.0), và `ios-troubleshoot` (bảng §3 giờ là skill, không
 còn nằm một mình trong file này), `ios-endpoint`, `api-intake`, `ios-review`,
@@ -246,16 +249,42 @@ còn nằm một mình trong file này), `ios-endpoint`, `api-intake`, `ios-revi
 phải lệnh tưởng tượng; `ios-endpoint` lấy đúng API của `KVMockNetworkSession` và
 `perform(_:_:)` trong repo. Còn lại:
 
-**Bị chặn (2)** — cùng một câu hỏi chưa có lời đáp:
+**✅ Ba skill Figma — viết xong 14/08.** Câu hỏi AppSpec MCP đã có lời đáp từ người
+dùng: **đi đường Figma Dev Mode MCP**, không dùng AppSpec. Chốt rồi thì đừng mở lại.
 
-> Base Android dùng **AppSpec MCP** nội bộ (`get_screen_flow`,
-> `get_design_context`, `download_figma_images`), nhưng câu trả lời cho iOS là
-> **Figma Dev Mode MCP**. Hai cái khác nhau cả tool lẫn dữ liệu: AppSpec cho *đồ
-> thị điều hướng* (thứ làm `PLAN.md` bên Android hay), Dev Mode cho *Figma
-> Variables* (token thật). **Cần biết AppSpec MCP có dùng được cho iOS không.**
+Hoá ra là **ba** skill chứ không phải hai, vì workflow có một khâu văn bản mà bản
+kế hoạch cũ bỏ sót — spec phải qua cổng người duyệt trước khi có test spec:
 
-- `figma-intake` — Figma → design token + `DESIGN_TOKENS.md`
-- `figma-screen` — một node Figma → SwiftUI View
+```
+figma-intake  →  figma-spec  →  [người duyệt]  →  test spec + TASKS.md  →  figma-screen
+```
+
+- `figma-intake` — token + kiểm kê component, **cửa chặn**: không code màn nào
+  trước khi màu có tên. Code trước là rải hex literal vào `Features/`, và luật 6
+  fail build vì đúng chuyện đó.
+- `figma-spec` — `FEATURE_SPEC.md` → (duyệt) → `FEATURE_TEST_SPEC.md` + `TASKS.md`.
+  Bảng task tách **cột Code và cột Test**: gộp một cột thì "xong" luôn có nghĩa là
+  "code xong" và test không bao giờ được đòi. Link Figma trỏ **node**, không trỏ
+  file.
+- `figma-screen` — một node → một màn, ảnh **vector** (`preserves-vector-representation`)
+  vào asset catalog, và mọi chuỗi đi qua 19 file `.strings`.
+
+Hai bẫy đã viết sẵn vào skill vì chúng chắc chắn sẽ gặp:
+
+- **Text trong design là bản tiếng Việt của một key, không phải một chuỗi.** Chép
+  thẳng `Text("Áp dụng")` từ Figma thì `check-l10n.sh` đỏ — hoặc tệ hơn là lọt qua
+  và thành app một ngôn ngữ.
+- **Figma đo pixel và cố định pt; app đo point và phải co giãn.** Map typography
+  sang *text style* gần nhất chứ đừng map sang số, nếu không Dynamic Type chết.
+  Font riêng của brand cần `UIAppFonts` — base không có dòng nào — nên đó là việc
+  của `ios-project`.
+
+**Chưa nghiệm thu được**: MCP Figma chưa nối (không có tool `figma*` nào trong
+session, và cổng 3845 không ai lắng nghe dù Figma desktop đang chạy). Nên ba skill
+này mới chỉ đúng *trên giấy*. Skill `figma-intake` vì thế mở đầu bằng một bước bắt
+liệt kê tool thật rồi mới dùng — **đừng đoán tên tool của Dev Mode MCP**, đúng bài
+học của `kv-packages`: API không có trong training data thì code nhìn đúng mà không
+chạy là kết quả thường gặp nhất.
 
 **✅ `ios-project` — viết xong 14/08.** `project.yml`: configuration, giá trị
 build-config, package, entitlement, scheme, folder tầng. Ba thứ đáng ghi vì chúng
@@ -568,7 +597,8 @@ Câu mở đầu gợi ý:
 > pass. Viết prompt khó hơn cho 7 case đó, và chạy lặp vài lượt vì một verdict
 > đơn lẻ đã lật chiều một lần.
 
-Việc chưa xong, theo thứ tự: **hai skill Figma** (§4.1, chặn ở câu hỏi AppSpec MCP).
+Việc chưa xong: **nghiệm thu ba skill Figma** (§4.1 — cần nối Dev Mode MCP trước),
+và **7 case chưa đo được gì** (§4.2, chỉ làm khi có sửa skill).
 
 Hai điều kiện của bài đo, kiểm trước mỗi lần chạy chứ đừng giả định:
 
