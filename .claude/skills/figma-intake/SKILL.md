@@ -30,7 +30,8 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3845/mcp   # 400 = s�
 `400` cho một `GET` trần là **đúng** — endpoint chỉ nhận `POST` JSON-RPC. `000`
 mới là chưa bật.
 
-Sáu tool, đối chiếu trực tiếp với `tools/list` của server ngày 14/08
+Sáu tool, đối chiếu trực tiếp với danh sách server tự khai (JSON-RPC **tools·list**)
+ngày 14/08
 (`Figma Dev Mode MCP Server 1.0.0`) — không phải nhớ ra:
 
 | Tool | Việc |
