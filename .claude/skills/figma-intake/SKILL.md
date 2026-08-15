@@ -19,30 +19,48 @@ của `check-arch.sh` fail build khi thấy color literal ngoài `DesignSystem`.
 
 ## Trước khi bắt đầu: MCP đã nối chưa
 
-Skill này cần Figma Dev Mode MCP. **Đừng đoán tên tool** — liệt kê tool đang có
-rồi dùng đúng tên thật:
+Skill này cần Figma Dev Mode MCP. Server chạy **trong app Figma desktop**
+(Preferences → `Enable local MCP server`), nghe ở `http://127.0.0.1:3845/mcp`.
+Kiểm sống chết bằng cổng, đừng tin cảm giác:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3845/mcp   # 400 = sống, 000 = chưa bật
+```
+
+`400` cho một `GET` trần là **đúng** — endpoint chỉ nhận `POST` JSON-RPC. `000`
+mới là chưa bật.
+
+Sáu tool, đối chiếu trực tiếp với `tools/list` của server ngày 14/08
+(`Figma Dev Mode MCP Server 1.0.0`) — không phải nhớ ra:
+
+| Tool | Việc |
+|---|---|
+| `get_design_context` | tool **chính** cho design→code: reference code của một node |
+| `get_variable_defs` | Figma Variables → `{'icon/default/secondary': #949494}`. Nguồn token sạch nhất |
+| `get_screenshot` | ảnh node, hoặc node đang chọn trong Figma desktop |
+| `get_metadata` | metadata node/page — doc của chính nó nói ưu tiên `get_design_context` |
+| `get_motion_context` | keyframe, easing |
+| `get_figjam` | node FigJam |
+
+Server có thể đổi tool giữa các bản Figma. Thấy lệch thì **liệt kê lại** rồi sửa
+bảng này, đừng chống chế bằng cách đoán:
 
 ```
 ToolSearch: "figma"
 ```
 
-Không thấy tool nào thì **dừng và nói rõ**, đừng tự nghĩ ra token. Một bộ design
+Không có tool nào thì **dừng và nói rõ**, đừng tự nghĩ ra token. Một bộ design
 system bịa ra trông y như một bộ đọc từ Figma, và sai lệch chỉ lộ ra khi designer
 mở app lên xem.
-
-Năng lực cần có, gọi tên theo *việc* chứ không theo tool:
-
-| Cần | Dùng để |
-|---|---|
-| đọc variable/style của file | màu, typography, spacing — nguồn chuẩn nhất |
-| đọc metadata/code của một node | khi file chưa dùng Variables |
-| lấy ảnh/screenshot của node | đối chiếu mắt, và export vector |
 
 ## Bốn bước
 
 ### 1. Kiểm kê, chưa viết code
 
-Lấy toàn bộ variable/style rồi lập bảng **trước khi** sửa file nào. Bảng này là
+`get_variable_defs` trên node gốc (hoặc trên frame chứa design system) rồi lập
+bảng **trước khi** sửa file nào. File chưa dùng Variables thì rơi về
+`get_design_context` và đọc giá trị trong reference code — kém sạch hơn một bậc,
+và đáng nói với designer. Bảng này là
 thứ đưa người ta xem, và là chỗ phát hiện việc design chưa chốt:
 
 ```

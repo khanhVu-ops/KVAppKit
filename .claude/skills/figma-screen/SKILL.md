@@ -35,6 +35,14 @@ ngay lúc thêm.
 
 Icon và illustration export **SVG hoặc PDF**, không phải PNG @1x/@2x/@3x:
 
+⚠️ **Chưa xác minh**: Dev Mode MCP (1.0.0) có 6 tool — `get_design_context`,
+`get_variable_defs`, `get_screenshot`, `get_metadata`, `get_motion_context`,
+`get_figjam` — và `get_screenshot` trả **ảnh raster**, không phải SVG. Đường ra
+file vector chưa được thử lần nào. Lần đầu làm thật thì kiểm xem
+`get_design_context` có trả link asset không; không có thì export tay từ Figma
+hoặc đi REST `GET /v1/images/:key?ids=…&format=svg`. **Đừng báo là đã export
+vector khi thứ nằm trong asset là PNG** — nó nhìn giống nhau cho tới lúc phóng to.
+
 1. Export node từ Figma dạng SVG (hoặc PDF).
 2. Bỏ vào `App/Resources/Assets.xcassets/<Tên>.imageset/`.
 3. `Contents.json` phải bật giữ vector, và chỉ một scale:
