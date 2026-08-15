@@ -17,51 +17,55 @@ description: >-
 tên. Một màn viết `Color(hex: "#4C6FFF")` là một màn không restyle được, và luật 6
 của `check-arch.sh` fail build khi thấy color literal ngoài `DesignSystem`.
 
-## Trước khi bắt đầu: MCP đã nối chưa
+## Phần Figma: dùng skill của plugin, đừng viết lại ở đây
 
-Skill này cần Figma Dev Mode MCP. Server chạy **trong app Figma desktop**
-(Preferences → `Enable local MCP server`), nghe ở `http://127.0.0.1:3845/mcp`.
-Kiểm sống chết bằng cổng, đừng tin cảm giác:
+Plugin `figma` chính chủ mang theo bộ skill riêng, và **nó là nguồn đúng cho mọi
+cơ chế phía Figma**:
+
+- `figma:figma-design-to-code` — **bắt buộc load trước khi gọi `get_design_context`**.
+  Chính nó tuyên bố vậy, nên bỏ qua là bỏ qua một prerequisite.
+- `figma:figma-use` — bắt buộc trước mọi lệnh ghi vào Figma.
+- `figma:figma-swiftui` — Figma ↔ SwiftUI, hai chiều.
+
+Skill này **không** chép lại tên tool hay cách gọi. Hai bản luật là hai bản sẽ
+lệch nhau, và bản chép lại sẽ lệch trước — plugin do chính Figma cập nhật. Việc
+của file này là phần plugin không thể biết: cây thư mục, quy ước đặt tên, và luật
+của `check-arch.sh` / `check-l10n.sh` trong repo.
+
+Nguồn token sạch nhất là **Figma Variables** (`get_variable_defs`, gọi qua đường
+plugin dặn). File chưa dùng Variables thì rơi về design context và đọc giá trị
+trong reference code — kém sạch hơn một bậc, và đáng nói với designer.
+
+### Server sống chưa — hai điều kiện, không phải một
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3845/mcp   # 400 = sống, 000 = chưa bật
 ```
 
-`400` cho một `GET` trần là **đúng** — endpoint chỉ nhận `POST` JSON-RPC. `000`
-mới là chưa bật.
+`400` cho một `GET` trần là **đúng**: endpoint chỉ nhận `POST` JSON-RPC. `000` mới
+là chưa bật (Figma desktop → Preferences → `Enable local MCP server`).
 
-Sáu tool, đối chiếu trực tiếp với danh sách server tự khai (JSON-RPC **tools·list**)
-ngày 14/08
-(`Figma Dev Mode MCP Server 1.0.0`) — không phải nhớ ra:
-
-| Tool | Việc |
-|---|---|
-| `get_design_context` | tool **chính** cho design→code: reference code của một node |
-| `get_variable_defs` | Figma Variables → `{'icon/default/secondary': #949494}`. Nguồn token sạch nhất |
-| `get_screenshot` | ảnh node, hoặc node đang chọn trong Figma desktop |
-| `get_metadata` | metadata node/page — doc của chính nó nói ưu tiên `get_design_context` |
-| `get_motion_context` | keyframe, easing |
-| `get_figjam` | node FigJam |
-
-Server có thể đổi tool giữa các bản Figma. Thấy lệch thì **liệt kê lại** rồi sửa
-bảng này, đừng chống chế bằng cách đoán:
+Điều kiện thứ hai bẫy hơn nhiều, vì nó **không phải trạng thái một lần**:
 
 ```
-ToolSearch: "figma"
+The MCP server is only available if your active tab is a design or FigJam file.
 ```
 
-Không có tool nào thì **dừng và nói rõ**, đừng tự nghĩ ra token. Một bộ design
-system bịa ra trông y như một bộ đọc từ Figma, và sai lệch chỉ lộ ra khi designer
-mở app lên xem.
+Server chỉ phục vụ khi **tab đang hoạt động trong Figma desktop là một file
+Design/FigJam**. Chuyển sang tab khác giữa chừng là tool biến mất, và triệu chứng
+là "đang chạy ngon tự nhiên hỏng". Thấy lỗi đó thì quay lại Figma, mở đúng file,
+rồi thử lại — đừng đi sửa cấu hình.
+
+Không có tool nào dùng được thì **dừng và nói rõ**, đừng tự nghĩ ra token. Một bộ
+design system bịa ra trông y như một bộ đọc từ Figma, và sai lệch chỉ lộ ra khi
+designer mở app lên xem.
 
 ## Bốn bước
 
 ### 1. Kiểm kê, chưa viết code
 
-`get_variable_defs` trên node gốc (hoặc trên frame chứa design system) rồi lập
-bảng **trước khi** sửa file nào. File chưa dùng Variables thì rơi về
-`get_design_context` và đọc giá trị trong reference code — kém sạch hơn một bậc,
-và đáng nói với designer. Bảng này là
+Đọc Variables của node gốc (hoặc frame chứa design system) rồi lập bảng **trước
+khi** sửa file nào — theo đúng cách `figma:figma-design-to-code` dặn. Bảng này là
 thứ đưa người ta xem, và là chỗ phát hiện việc design chưa chốt:
 
 ```

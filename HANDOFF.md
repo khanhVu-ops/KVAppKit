@@ -279,12 +279,30 @@ Hai bẫy đã viết sẵn vào skill vì chúng chắc chắn sẽ gặp:
   Font riêng của brand cần `UIAppFonts` — base không có dòng nào — nên đó là việc
   của `ios-project`.
 
-**Chưa nghiệm thu được**: MCP Figma chưa nối (không có tool `figma*` nào trong
-session, và cổng 3845 không ai lắng nghe dù Figma desktop đang chạy). Nên ba skill
-này mới chỉ đúng *trên giấy*. Skill `figma-intake` vì thế mở đầu bằng một bước bắt
-liệt kê tool thật rồi mới dùng — **đừng đoán tên tool của Dev Mode MCP**, đúng bài
-học của `kv-packages`: API không có trong training data thì code nhìn đúng mà không
-chạy là kết quả thường gặp nhất.
+**Cùng ngày, plugin `figma` chính chủ được cài — và nó đổi phạm vi của cả ba.**
+Plugin mang **13 skill `figma:*`**, trong đó `figma:figma-design-to-code` tự tuyên
+bố là **prerequisite bắt buộc trước khi gọi `get_design_context`**, và
+`figma:figma-swiftui` phủ đúng chiều Figma→SwiftUI. Bản đầu của tôi bảo gọi thẳng
+tool — tức là dạy bỏ qua một prerequisite. Đã sửa.
+
+Ranh giới chốt lại, theo đúng cách `ios-review` ủy quyền cho `review-checklist.md`:
+
+| Của plugin | Của kit này |
+|---|---|
+| tên tool, cách gọi, Figma→SwiftUI | `Tokens.xcassets` + quy ước `AppColor`/`AppFont`, dark mode bắt buộc |
+| ghi ngược vào Figma | luật 6/7/11 của `check-arch.sh` |
+| Code Connect, motion, FigJam | 19 file `.strings` — text Figma là *key*, không phải chuỗi |
+| | cổng duyệt spec → test spec → `TASKS.md` |
+
+Chép lại cơ chế Figma vào kit là tự nhận nợ: plugin do Figma cập nhật, bản chép
+lại sẽ lệch trước.
+
+**Chưa nghiệm thu được**, và lý do đã đổi hai lần nên ghi rõ lần cuối: server
+Dev Mode **sống** (`GET /mcp` trả 400, `tools/list` ra 6 tool), nhưng nó chỉ phục
+vụ khi **tab đang hoạt động trong Figma desktop là file Design/FigJam** —
+`The MCP server is only available if your active tab is a design or FigJam file`.
+Đó là điều kiện *liên tục*, không phải bật một lần, nên triệu chứng sẽ là "đang
+chạy ngon tự nhiên hỏng". Đã vào bảng của `ios-troubleshoot`.
 
 **✅ `ios-project` — viết xong 14/08.** `project.yml`: configuration, giá trị
 build-config, package, entitlement, scheme, folder tầng. Ba thứ đáng ghi vì chúng

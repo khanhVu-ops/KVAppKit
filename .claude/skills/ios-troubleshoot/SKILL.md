@@ -44,6 +44,13 @@ Ba câu hỏi, theo thứ tự:
 | Test không link được symbol của app | test bundle không host | `TEST_HOST` phải trỏ app; `App.init` bỏ bootstrap khi `AppEnvironment.isRunningTests` |
 | Test treo rồi timeout khi chờ state | đang `Task.sleep` để chờ | `waitForLoad()`, hoặc spy đồng bộ như `KVRouterSpy` |
 
+## Figma MCP
+
+| Triệu chứng | Nguyên nhân | Xử |
+|---|---|---|
+| Tool Figma **đang chạy ngon rồi tự nhiên hỏng**, hoặc không nạp được: `The MCP server is only available if your active tab is a design or FigJam file` | Dev Mode MCP chỉ phục vụ khi **tab đang hoạt động** trong Figma desktop là file Design/FigJam. Đây là điều kiện liên tục, không phải bật một lần | quay lại Figma, mở đúng file Design, rồi thử lại. **Đừng đi sửa cấu hình** — `mcpServers` và plugin đều không sai |
+| `curl http://127.0.0.1:3845/mcp` trả `400` | không phải lỗi — endpoint chỉ nhận `POST` JSON-RPC | `000` mới là chưa bật server (Figma → Preferences → `Enable local MCP server`) |
+
 ## Chạy app
 
 | Triệu chứng | Nguyên nhân | Xử |

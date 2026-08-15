@@ -12,6 +12,11 @@ description: >-
 
 # Figma → spec → test spec → task board
 
+Phần **đọc Figma** đi qua skill của plugin chính chủ
+(`figma:figma-design-to-code` — bắt buộc load trước khi gọi `get_design_context`).
+Skill này không chạm tới cơ chế đó; nó lo phần plugin không thể biết: **quy trình
+của đội và cây thư mục của repo này**.
+
 Ba văn bản, ba thời điểm khác nhau. **Cổng review nằm giữa văn bản 1 và 2** và nó
 là cổng thật: dừng lại, đưa người duyệt, đợi trả lời.
 

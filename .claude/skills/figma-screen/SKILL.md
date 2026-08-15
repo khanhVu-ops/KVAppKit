@@ -16,6 +16,20 @@ Trước khi mở Figma, đọc lại `docs/DESIGN_TOKENS.md`. Việc của skil
 token đã có**, không phải phát minh giá trị mới. Thấy một màu chưa có tên thì đó
 là việc của `figma-intake`, không phải chỗ để viết một hex.
 
+## Chia việc với plugin `figma`
+
+Phần **đọc Figma và dịch sang SwiftUI** là của plugin chính chủ, không viết lại ở
+đây:
+
+- `figma:figma-design-to-code` — **bắt buộc load trước khi gọi `get_design_context`**
+- `figma:figma-swiftui` — Figma ↔ SwiftUI
+
+File này chỉ giữ phần plugin không thể biết: **luật của repo này**. Plugin sẽ sinh
+ra SwiftUI đúng cú pháp nhưng không biết `AppColor` tên gì, không biết text phải
+qua 19 file `.strings`, và không biết view con ở đây bắt buộc `Equatable`. Bốn
+luật dưới đây là chỗ code do plugin sinh ra hay trượt nhất — soi đúng chúng sau
+khi dịch xong.
+
 ## Bốn luật của màn hình, kiểm được bằng script
 
 | Luật | Script bắt |
@@ -35,13 +49,11 @@ ngay lúc thêm.
 
 Icon và illustration export **SVG hoặc PDF**, không phải PNG @1x/@2x/@3x:
 
-⚠️ **Chưa xác minh**: Dev Mode MCP (1.0.0) có 6 tool — `get_design_context`,
-`get_variable_defs`, `get_screenshot`, `get_metadata`, `get_motion_context`,
-`get_figjam` — và `get_screenshot` trả **ảnh raster**, không phải SVG. Đường ra
-file vector chưa được thử lần nào. Lần đầu làm thật thì kiểm xem
-`get_design_context` có trả link asset không; không có thì export tay từ Figma
-hoặc đi REST `GET /v1/images/:key?ids=…&format=svg`. **Đừng báo là đã export
-vector khi thứ nằm trong asset là PNG** — nó nhìn giống nhau cho tới lúc phóng to.
+⚠️ **Chưa xác minh**: đường ra file **vector** từ Dev Mode MCP chưa thử lần nào —
+tool ảnh của nó trả raster. Lần đầu làm thật thì hỏi `figma:figma-design-to-code`
+xem asset ra đường nào; không có thì export tay từ Figma, hoặc REST
+`GET /v1/images/:key?ids=…&format=svg`. **Đừng báo là đã export vector khi thứ nằm
+trong asset là PNG** — hai cái nhìn giống nhau cho tới lúc phóng to.
 
 1. Export node từ Figma dạng SVG (hoặc PDF).
 2. Bỏ vào `App/Resources/Assets.xcassets/<Tên>.imageset/`.
