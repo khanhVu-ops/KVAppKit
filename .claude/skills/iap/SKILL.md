@@ -130,7 +130,8 @@ từ deep link, restoration, nút premium ở Settings. Registry rỗng lúc đ�
 }
 ```
 
-`onClose` là chỗ app đóng màn, và dùng nó thì SDK tự log `close_iap`. Truyền `nil`
+`onClose` là chỗ app đóng màn. SDK bọc closure này lại nên `close_iap` **tự bắn**,
+và tự bỏ qua khi user đã mua hoặc đã restore — app không gọi gì thêm. Truyền `nil`
 thì thiết kế đọc `\.vtIAPScreenOnClose` ra `nil` và hiểu là "màn này không có nút
 đóng". Tham số `strings:` hiện bị SDK bỏ qua — copy đi vào thiết kế.
 
@@ -276,9 +277,11 @@ SDK tự bắn `show_iap`, `click_subscription`, `click_CTA`, `close_iap`,
 `pur_success_<placement>` cho A/B. Params chung: `placement`, `screen_code`,
 `funnel_type`.
 
-Một chỗ cần tay: `close_iap` chỉ tự bắn khi paywall mở bằng
-`VTIAPScreenView(placement:onClose:)` — present bằng đường khác thì phải gọi
-`viewModel.trackCloseIAP()`.
+`close_iap` đi theo `onClose` của `VTIAPScreenView`, nên nó chỉ hụt khi paywall
+đóng mà không qua closure đó: app tự host `VTIAPViewModel` thay vì dùng
+`VTIAPScreenView`, hoặc paywall nằm trong `.sheet` và user gạt xuống để đóng. Đúng
+hai trường hợp đó mới gọi `viewModel.trackCloseIAP()` — nó tự bỏ qua khi đã mua,
+nên không sợ bắn trùng.
 
 Một chỗ hụt, chỉ ảnh hưởng `.server`: `payment_result_iap` chỉ bắn trong luồng mua
 tại chỗ, nên giao dịch được ack **về sau** không có Success nào. Tỉ lệ thành công
@@ -305,7 +308,7 @@ Cần mirror event sang chỗ khác thì `VTEventTracker.addObserver { name, par
 - **Không `return false` cho lỗi mạng** trong closure verify.
 - **Không giữ delegate bằng một ViewModel** — SDK giữ weak.
 - **Không coi `currentGrantToken` là chỗ lưu token.**
-- **Không tự bắn event IAP**, trừ `trackCloseIAP()`.
+- **Không tự bắn event IAP.** SDK đã bắn hết, kể cả `close_iap`.
 
 ## Thêm một placement
 
