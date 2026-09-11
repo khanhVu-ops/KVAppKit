@@ -176,6 +176,9 @@ deliberately does not repeat.
 | A Figma link arrives — tokens and components before any screen | `figma-intake` |
 | Design has to become a reviewable spec, a test spec, and a task board | `figma-spec` |
 | One Figma node becomes one SwiftUI screen | `figma-screen` |
+| A tracking/ads scenario table arrives — banner, native, interstitial, rewarded | `ads` |
+| A paywall, a subscription, a premium gate, an `iap_placement_config` | `iap` |
+| A bottom sheet, a modal, a popup — `.sheet` vs `overlay`, presentation background | `sheet` |
 | Brand-new repository | `init-base` |
 
 `ios-troubleshoot` is worth loading *before* theorising about a failure: most of

@@ -89,6 +89,9 @@ project cách nhau một tuần mà lấy hai cây source khác nhau thì không
 | `figma-intake` | design → token + component, **trước khi** code màn nào |
 | `figma-spec` | Figma → feature spec → (duyệt) → test spec → `TASKS.md` |
 | `figma-screen` | một node Figma → một màn SwiftUI, ảnh vector vào asset |
+| `ads` | gắn ads VTMonetSDK: banner · native · inter · rewarded |
+| `iap` | paywall VTMonetSDK: placement · screen_code · gate premium |
+| `sheet` | tấm dán đáy / modal: `.sheet` chứ không `overlay`, và nền presentation |
 | `init-base` | repo mới |
 
 Cộng subagent `swiftui-screen` cho việc scaffold một màn (model rẻ, tool giới hạn).
