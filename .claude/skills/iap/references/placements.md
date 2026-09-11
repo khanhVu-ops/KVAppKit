@@ -11,7 +11,12 @@ nào được vẽ — đổi nó trên Firebase là A/B một paywall mà khôn
 | | | | | |
 
 Mọi entry phải có mặt **ở hai chỗ**: Firebase Remote Config **và**
-`<App>/Resources/remote_config_defaults.plist`. Xem `SKILL.md`.
+`<App>/Resources/remote_config_defaults.plist` — `registerDefaults` của SDK không
+gọi được từ app, nên plist là đường duy nhất để có default. Xem `SKILL.md`.
+
+Có giá gạch ngang thì thêm `fake_price` vào chính entry đó (`{"<product id>":
+{"multiplier": 2.5, "rounding": "pretty"}}`), đừng nhân giá trong View — nhân trong
+View là một con số không đổi được từ xa, và sai currency ở storefront khác.
 
 ## Ví dụ (xoá khi điền bảng thật)
 
@@ -42,7 +47,10 @@ Ba kiểu entry, và phân biệt được chúng là phân biệt được ch�
 3. **`delay_can_dismiss` chỉ đặt ở paywall của luồng startup**, không đặt ở paywall
    mở từ trong app: người dùng bấm vào nút premium rồi không đóng được màn trong ba
    giây là một lượt uninstall, không phải một lượt mua.
-4. **`screen_code` phải có view đã đăng ký.** Code chưa đăng ký → paywall trắng,
-   không crash, không log — `tools/check-monet-config.sh` là thứ bắt được.
-5. **Placement chưa có điểm mở thì cứ giữ** nếu kịch bản còn dở. Xoá đi thì lúc làm
+4. **`screen_code` phải có view đã đăng ký.** Code chưa đăng ký → một `ProgressView`
+   quay mãi, không crash, không log — `tools/check-monet-config.sh` là thứ bắt được.
+5. **Tên `placement` phải khớp giữa code và config.** Sai một chữ thì SDK **không**
+   báo lỗi: nó rơi về placement **đầu tiên** trong mảng, nên paywall vẫn hiện, bán
+   sai bộ gói và log sai funnel — dạng hỏng tốn nhiều ngày nhất để thấy.
+6. **Placement chưa có điểm mở thì cứ giữ** nếu kịch bản còn dở. Xoá đi thì lúc làm
    tới phải khai lại cả hai đầu; script in chúng ở dòng `ℹ️`, không fail.

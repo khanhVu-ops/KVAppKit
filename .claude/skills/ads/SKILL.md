@@ -64,20 +64,30 @@ có `remote_config_defaults.plist`, không có lời gọi init nào. Bốn vi�
    ```swift
    MonetSDKController.shared.initSDKController(
        appleAppId: "<app store id, chỉ số>",
-       subscriptionPackages: [],
-       inAppPackages: [],
+       subscriptionPackages: [],   // SDK không đọc hai tham số này —
+       inAppPackages: [],          // gói IAP khai ở iap_placement_config
        launchOptions: launchOptions
    )
    ```
 
-   Và ở màn splash, chờ Remote Config trước khi vào app:
+5. **Màn đầu là `VTSplashScreenView`** — nó tự gọi `initSplash` (fetch Remote
+   Config), xin ATT, khôi phục cờ premium, check update, và chạy splash ad:
 
    ```swift
-   MonetSDKController.shared.initSplash { /* điều hướng vào main */ }
+   VTSplashScreenView(currentScreen: $currentScreen) {
+       Text("Splash")           // phần nhìn của app
+   }
    ```
 
-   `initSplash` có timeout riêng (mặc định 20s) và **luôn** gọi callback — kể cả
-   khi fetch trượt. Đừng thêm timeout thứ hai bọc ngoài.
+   **Đừng gọi `MonetSDKController.shared.initSplash` bằng tay khi đã dùng màn
+   này** — hai lần fetch là hai lần chờ, và callback thứ hai điều hướng đè lên
+   luồng splash đang chạy.
+
+   App **không** dùng splash của SDK thì `initSplash` là việc phải tự làm, ở màn
+   splash của app, trước khi vào main — không có nó thì Remote Config không bao
+   giờ fetch, và `monet_sdk_config` lẫn `iap_placement_config` rỗng suốt phiên.
+   Nó có timeout riêng (mặc định 20s) và **luôn** gọi callback kể cả khi fetch
+   trượt, nên đừng bọc thêm timeout thứ hai.
 
 **Đừng gọi `FirebaseApp.configure()` ở app.** `initSDKController` đã gọi. Gọi lần
 hai là một cảnh báo cộng một `FIRApp` bị thay giữa chừng.
