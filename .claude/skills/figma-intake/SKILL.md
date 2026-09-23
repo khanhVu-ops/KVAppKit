@@ -3,7 +3,7 @@ name: figma-intake
 description: >-
   Đọc design trên Figma (qua Figma Dev Mode MCP) rồi định nghĩa **design system**
   cho app iOS này TRƯỚC KHI code màn nào: màu, font, spacing, radius vào
-  `DesignSystem/Foundation` + `Tokens.xcassets`, và một bảng kiểm kê component
+  `DesignSystem/Foundation` + `Assets.xcassets/Colors`, và một bảng kiểm kê component
   chung (button, card, input, chip…) đối chiếu với component đã có. Dùng skill này
   khi nhận link Figma, khi được yêu cầu "check design", "define design system",
   "lấy token từ Figma", hoặc trước bất kỳ việc code UI nào từ design. Code màn
@@ -86,9 +86,9 @@ Ba thứ phải hỏi lại designer, đừng tự quyết:
 - **Cùng một hex hai tên khác nhau**, hoặc hai hex gần nhau cùng một tên. Nhân
   bản token ở bước này rẻ hơn nhiều lần sửa sau.
 
-### 2. Màu → `Tokens.xcassets`, tên theo *nghĩa*
+### 2. Màu → `Assets.xcassets/Colors`, tên theo *nghĩa*
 
-Mỗi màu là một `.colorset` trong `DesignSystem/Resources/Tokens.xcassets`, hai
+Mỗi màu là một `.colorset` trong `App/Resources/Assets.xcassets/Colors/` (catalog duy nhất của app), hai
 appearance:
 
 ```json
@@ -150,7 +150,7 @@ preview nên có đủ variant, vì đó là chỗ designer soi mà không cần
 ## Đầu ra
 
 - `DesignSystem/Foundation/AppColor.swift`, `AppFont.swift` (+ `Spacing`, `Radius`)
-- `DesignSystem/Resources/Tokens.xcassets/<Tên>.colorset/`
+- `App/Resources/Assets.xcassets/Colors/<Tên>.colorset/`
 - `docs/DESIGN_TOKENS.md` — bảng Figma → token, **kèm link node**, và danh sách
   câu hỏi còn treo cho designer
 - Component mới (nếu có) trong `DesignSystem/Components/`
@@ -163,7 +163,7 @@ preview nên có đủ variant, vì đó là chỗ designer soi mà không cần
 
 Luật 6 kiểm không còn color literal ngoài `DesignSystem`; luật 11 kiểm preview.
 File `.swift` mới thì hook đã `xcodegen generate`, nhưng **thêm folder mới trong
-`Tokens.xcassets` không phải file Swift** — nếu asset mới không hiện ra thì chạy
+`Assets.xcassets` không phải file Swift** — nếu asset mới không hiện ra thì chạy
 `xcodegen generate` bằng tay.
 
 Bước tiếp theo là `figma-spec`, không phải code màn hình.

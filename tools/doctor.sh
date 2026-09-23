@@ -147,18 +147,27 @@ if [ -z "$source_root" ]; then
     skip "path trong doc — không thấy project.yml (dùng --against DIR)"
 else
     missing=""; absent_layer=""
+    # Tầng nằm trong folder mang tên target (`MyApp/Features/...`), test trong
+    # `MyAppTests/`. Doc viết path tính từ folder source (`Features/...`, `Tests/...`)
+    # — AGENTS.md mục 2 khai quy ước đó — nên phải tìm ở đó trước.
+    app_name="$(awk '/^name:/ { print $2; exit }' "$source_root/project.yml")"
+    app_dir="$source_root/$app_name"
     while read -r ref; do
         [ -n "$ref" ] || continue
         file="${ref%%|*}"; path="${ref#*|}"
-        # Hai gốc: doc của kit nhắc path của kit (`tools/init-base.sh`) lẫn path của
-        # app (`Features/Order/...`), và cả hai đều đúng.
-        [ -e "$source_root/$path" ] || [ -e "$path" ] && continue
+        # Ba gốc: doc của kit nhắc path của kit (`tools/init-base.sh`), path của
+        # app (`Features/Order/...`) và path test (`Tests/DataTests/`).
+        [ -e "$app_dir/$path" ] || [ -e "$source_root/$path" ] || [ -e "$path" ] && continue
+        case "$path" in
+            Tests/*) [ -e "$source_root/${app_name}Tests/${path#Tests/}" ] && continue ;;
+        esac
         # App tool không có `Data/` chút nào, app không auth không có
         # `Domain/Entities/`. Doc mô tả một tầng app này không dùng thì không
         # phải doc sai — nó chỉ đang nói về tier khác. Đếm riêng, không tính đỏ:
         # bắt nó đỏ trong mọi repo tool là dạy người ta bỏ qua màu đỏ.
         layer="${path%%/*}"
-        if [ ! -d "$source_root/$layer" ] && [ ! -d "$layer" ]; then
+        [ "$layer" = Tests ] && layer_dir="$source_root/${app_name}Tests" || layer_dir="$app_dir/$layer"
+        if [ ! -d "$layer_dir" ] && [ ! -d "$source_root/$layer" ] && [ ! -d "$layer" ]; then
             absent_layer="$absent_layer$file → $path"$'\n'
         else
             missing="$missing$file → $path"$'\n'

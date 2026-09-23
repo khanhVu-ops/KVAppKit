@@ -20,7 +20,14 @@ biết, đừng đoán cho đủ mặt.
 
 Chạy từ root của repo. Các lệnh này đã kiểm trên chính base.
 
+Source nằm trong folder mang tên target (`name:` của `project.yml`), test ở
+`<tên>Tests/` — nên bước đầu là vào folder đó. Quét từ root thì `Features/*/` không
+khớp gì, và overview ra một app "chưa có feature nào" trông rất thuyết phục.
+
 ```bash
+app="$(awk '/^name:/ { print $2; exit }' project.yml)"
+cd "$app"
+
 # Feature và màn hình của nó
 for f in Features/*/; do
   printf '%s: ' "$(basename "$f")"
@@ -42,14 +49,15 @@ grep -rhoE 'enum [A-Za-z]+Key' DI/ | sort -u
 ls Domain/Entities Domain/UseCases
 
 # Test: tổng và theo tầng
-grep -rho 'func test_[a-zA-Z_]*' Tests | wc -l
-for d in Tests/*/; do printf '%s: ' "$(basename "$d")"; grep -rho 'func test_' "$d" | wc -l; done
+grep -rho 'func test_[a-zA-Z_]*' "../${app}Tests" | wc -l
+for d in "../${app}Tests"/*/; do printf '%s: ' "$(basename "$d")"; grep -rho 'func test_' "$d" | wc -l; done
 ```
 
 Thêm hai thứ chỉ đọc được ở file, không quét bằng một dòng:
 
-- **Cấu hình build**: `grep -nE 'API_BASE_URL|USES_STUB_BACKEND|deploymentTarget' project.yml`
-  — overview phải nói rõ Debug đang chạy stub hay API thật.
+- **Cấu hình build** (từ root): `grep -nE 'API_BASE_URL|USES_STUB_BACKEND|deploymentTarget' project.yml`
+  — overview phải nói rõ Debug đang chạy stub hay API thật. App tool không có hai key
+  đầu (init-base gỡ chúng cùng `Data/`): ghi "không có backend", đừng ghi "chưa biết".
 - **Version package**: `grep -A2 -E '^  KV' project.yml`.
 
 ## Ghi

@@ -35,16 +35,26 @@ enforced by `tools/check-arch.sh` instead of by the compiler, because files in
 the same module see each other with no `import` line to check.
 
 ```
-Core/           Loadable · AlertState · AppError · AppEnvironment      (Foundation only)
-Domain/         Entities · Repositories (protocol) · Services (ports) · UseCases
-Data/           DTO · Endpoints · Interceptors · Mapping · Local · Repositories · Testing
-DI/             every KVDependencyKey, and nowhere else
-DesignSystem/   Foundation (tokens) · Components · Modifiers · Toast
-Features/       Auth/ · Order/            one folder per flow, not per screen
-App/            entry · Navigation · Bootstrap · Session · Resources
-Tests/          DomainTests · DataTests · FeatureTests
-tools/          check-arch.sh · check-arch-selftest.sh · verify.sh
+MyApp/            all app source, in one folder named after the target
+  Core/           Loadable · AlertState · AppError · AppEnvironment      (Foundation only)
+  Domain/         Entities · Repositories (protocol) · Services (ports) · UseCases
+  Data/           DTO · Endpoints · Interceptors · Mapping · Local · Repositories · Testing
+  DI/             every KVDependencyKey, and nowhere else
+  DesignSystem/   Foundation (tokens) · Components · Modifiers · Toast
+  Features/       Auth/ · Order/            one folder per flow, not per screen
+  App/            entry · Navigation · Bootstrap · Session · Resources
+MyAppTests/       CoreTests · DomainTests · DataTests · FeatureTests
+tools/            check-arch.sh · check-arch-selftest.sh · verify.sh
 ```
+
+`MyApp` is the target name (`name:` in `project.yml`); `init-base` renames the two
+folders with it. **Layer paths in these rules and skills — `Features/…`,
+`App/Resources/…` — are relative to that source folder**, and `Tests/…` means
+`MyAppTests/…`.
+
+There is one asset catalog: `App/Resources/Assets.xcassets` — `AppIcon`, colour
+tokens under `Colors/` (a folder without namespace, so `Color("BrandPrimary")`
+resolves), and screen images.
 
 Dependency direction runs Core → Domain → Data → DI → DesignSystem → Features →
 App. Nothing points back up.

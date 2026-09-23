@@ -1,5 +1,9 @@
 # Từng tầng
 
+Mọi tầng dưới đây là folder con của **folder source mang tên target** (`MyApp/`,
+sau init-base là `<Module>/`); test nằm ở `MyAppTests/`. Path trong file này tính
+từ folder source.
+
 Không có SPM package: tất cả là folder trong một app target. Nghĩa là **compiler
 không chặn** một vi phạm phân tầng — file cùng module thấy nhau không cần
 `import`. `tools/check-arch.sh` là thứ thay thế, và nó suy luật từ chính source:
@@ -58,7 +62,7 @@ Xem `references/di.md`.
 
 `Foundation/` (AppColor, AppFont, Spacing, Radius) · `Components/` · `Toast/`
 
-Màu ship dưới dạng asset catalog (`Resources/Tokens.xcassets`) chứ không phải
+Màu ship dưới dạng asset catalog (`App/Resources/Assets.xcassets/Colors/`) chứ không phải
 Swift literal, để có biến dark và để người phụ trách design sửa được —
 `figma-intake` sinh lại catalog, không sinh lại file Swift.
 

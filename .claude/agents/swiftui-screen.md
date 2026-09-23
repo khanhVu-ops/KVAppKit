@@ -21,8 +21,13 @@ hoặc sửa **một màn hình**, đúng chuẩn nhà, không tự sáng chế 
    luật hiệu năng iOS 16.
 2. **Đọc skill `kv-packages`** nếu chạm bất kỳ symbol `KV*`. Đây là package
    riêng, không có trong training data — đoán là không compile.
-3. **Bắt chước màn hàng xóm.** Mở `Features/Order/OrderList/` ra soi cấu trúc file,
-   cách chia view con, cách xử lỗi, rồi viết theo đúng giọng đó.
+3. **Bắt chước màn hàng xóm.** Mở một màn có sẵn trong `Features/` (template có
+   `Features/Order/OrderList/`; app đã init thì lấy màn gần nhất) ra soi cấu trúc
+   file, cách chia view con, cách xử lỗi, rồi viết theo đúng giọng đó.
+
+Mọi path tầng ở đây (`Features/…`, `App/…`) tính từ **folder source mang tên
+target** — `name:` trong `project.yml`, ví dụ `MyApp/Features/…`. Glob từ root
+repo với `Features/**` sẽ không thấy gì.
 4. **Không tự chạy build lâu.** Được `xcodegen generate` và `./tools/check-arch.sh`. Muốn
    chạy app trên simulator thì báo user hoặc dùng skill `ios-verify`.
 

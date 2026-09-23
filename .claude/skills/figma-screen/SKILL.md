@@ -56,7 +56,10 @@ xem asset ra đường nào; không có thì export tay từ Figma, hoặc REST
 trong asset là PNG** — hai cái nhìn giống nhau cho tới lúc phóng to.
 
 1. Export node từ Figma dạng SVG (hoặc PDF).
-2. Bỏ vào `App/Resources/Assets.xcassets/<Tên>.imageset/`.
+2. Bỏ vào `App/Resources/Assets.xcassets/<Tên>.imageset/` — catalog duy nhất của
+   app, cùng chỗ với màu token trong `Colors/`. Đừng tạo catalog thứ hai. (Trùng
+   tên với một colorset thì không sao — đã đo: actool build cả hai, `Image` và
+   `Color` tra theo loại riêng.)
 3. `Contents.json` phải bật giữ vector, và chỉ một scale:
 
 ```json

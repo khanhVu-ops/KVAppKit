@@ -73,7 +73,7 @@ for cmd in git rsync perl; do
 done
 
 # Từ chối chạy trên repo đã có source — mất code tệ hơn là phải chạy lại lệnh.
-for guard in App Packages project.yml; do
+for guard in MyApp App Packages project.yml; do
   [[ -e "$kit_root/$guard" ]] && fail "đã có '$guard' — init-base chỉ dùng cho repo mới"
 done
 compgen -G "$kit_root/*.xcodeproj" >/dev/null && fail "đã có .xcodeproj — init-base chỉ dùng cho repo mới"
@@ -145,32 +145,36 @@ if ! $keep_demo; then
   # Luồng Auth thì không: nó ở lại cùng tier auth, vì một màn đăng nhập đã nối
   # sẵn use case, keychain và SessionController thì sửa cho khớp backend rẻ hơn
   # nhiều so với dựng lại từ đầu.
-  strip Features/Order \
-        Domain/Entities/Order.swift Domain/Entities/Order+Samples.swift \
-        Domain/Repositories/OrderRepositoryProtocol.swift \
-        Data/DTO/OrderDTO.swift Data/Repositories/OrderRepository.swift \
-        Data/Network/Endpoints/OrderEndpoint.swift Data/Testing/OrderStubs.swift \
-        DI/Dependencies+Order.swift \
-        Tests/DataTests/OrderRepositoryTests.swift \
-        Tests/FeatureTests/OrderDetailViewModelTests.swift \
-        Tests/FeatureTests/OrderListViewModelTests.swift
+  #
+  # Mọi tầng nằm trong `MyApp/`, test trong `MyAppTests/` — hai folder này được đổi
+  # sang tên module ở cuối script, sau khi mọi đường dẫn dưới đây đã dùng xong.
+  strip MyApp/Features/Order \
+        MyApp/Domain/Entities/Order.swift MyApp/Domain/Entities/Order+Samples.swift \
+        MyApp/Domain/Repositories/OrderRepositoryProtocol.swift \
+        MyApp/Data/DTO/OrderDTO.swift MyApp/Data/Repositories/OrderRepository.swift \
+        MyApp/Data/Network/Endpoints/OrderEndpoint.swift MyApp/Data/Testing/OrderStubs.swift \
+        MyApp/DI/Dependencies+Order.swift \
+        MyAppTests/DataTests/OrderRepositoryTests.swift \
+        MyAppTests/FeatureTests/OrderDetailViewModelTests.swift \
+        MyAppTests/FeatureTests/OrderListViewModelTests.swift
 
   # Auth: màn đăng nhập, keychain, session, guard, refresh token.
   if ! $with_auth; then
-    strip Features/Auth \
-          App/Session App/Bootstrap/AppBootstrap+Tokens.swift \
-          App/Navigation/Middlewares/AuthGuardMiddleware.swift \
-          Domain/Entities Domain/UseCases Domain/Repositories \
-          Domain/Services/TokenStoring.swift \
-          Data/Local Data/Network/Interceptors \
-          Data/DTO Data/Repositories Data/Testing Data/Network/Endpoints \
-          DI/Dependencies+Auth.swift DI/Dependencies+Session.swift \
-          Tests/DomainTests Tests/FeatureTests
+    strip MyApp/Features/Auth \
+          MyApp/App/Session MyApp/App/Bootstrap/AppBootstrap+Tokens.swift \
+          MyApp/App/Navigation/Middlewares/AuthGuardMiddleware.swift \
+          MyApp/Domain/Entities MyApp/Domain/UseCases MyApp/Domain/Repositories \
+          MyApp/Domain/Services/TokenStoring.swift \
+          MyApp/Data/Local MyApp/Data/Network/Interceptors \
+          MyApp/Data/DTO MyApp/Data/Repositories MyApp/Data/Testing MyApp/Data/Network/Endpoints \
+          MyApp/DI/Dependencies+Auth.swift MyApp/DI/Dependencies+Session.swift \
+          MyAppTests/DomainTests MyAppTests/FeatureTests
   fi
 
-  # API: cả tầng Data biến mất, và KVNetworkit không còn được link.
+  # API: cả tầng Data biến mất, và KVNetworkit không còn được link. Cùng đi với
+  # Data là `AppEnvironment+API.swift` — nơi duy nhất đọc `API_BASE_URL`.
   if ! $with_api; then
-    strip Data DI/Dependencies+Network.swift Tests/DataTests
+    strip MyApp/Data MyApp/DI/Dependencies+Network.swift MyAppTests/DataTests
   fi
 
   rsync -a "$kit_root/config/overlays/shared/" "$kit_root/"
@@ -183,39 +187,48 @@ if ! $keep_demo; then
   # Luật 9 của check-arch: folder rỗng là một lời khai về kiến trúc không còn
   # đúng. `-delete` chạy depth-first, nên folder cha rỗng đi vì con vừa bị xoá
   # cũng bị dọn trong cùng một lượt.
-  find "$kit_root"/{Core,Domain,Data,DI,DesignSystem,Features,App,Tests} \
+  find "$kit_root"/MyApp/{Core,Domain,Data,DI,DesignSystem,Features,App} "$kit_root/MyAppTests" \
     -type d -empty -delete 2>/dev/null || true
 
-  # project.yml: chỉ tier tool phải sửa — nó là tier duy nhất không link
-  # KVNetworkit và không còn folder Data/ để khai trong `sources`.
+  # project.yml + Info.plist: chỉ tier tool phải sửa — nó là tier duy nhất không
+  # link KVNetworkit và không có backend.
+  #
+  # `API_BASE_URL` và `USES_STUB_BACKEND` đi cùng: file đọc chúng
+  # (`Data/Network/AppEnvironment+API.swift`) vừa bị xoá cùng Data/, nên để lại key
+  # là để lại một URL `example.com` mà không ai đọc — và người mở project.yml sẽ
+  # tưởng app có backend. Comment ngay trên `USES_STUB_BACKEND` nói về chính key đó,
+  # nên xoá cả khối comment liền trên.
   if ! $with_api; then
     perl -0pi -e 's/^  KVNetworkit:\n(?:    .*\n)+//m'          "$kit_root/project.yml"
     perl -0pi -e 's/^      - package: KVNetworkit\n        product: KVNetworkit\n//mg' "$kit_root/project.yml"
-    perl -0pi -e 's/^      - path: Data\n//m'                   "$kit_root/project.yml"
+    perl -0pi -e 's/^ +API_BASE_URL: .*\n//mg'                  "$kit_root/project.yml"
+    perl -0pi -e 's/^(?: +#.*\n)* +USES_STUB_BACKEND: .*\n//mg' "$kit_root/project.yml"
+    perl -0pi -e 's/^\t<key>(?:API_BASE_URL|USES_STUB_BACKEND)<\/key>\n\t<string>.*<\/string>\n//mg' \
+      "$kit_root/MyApp/App/Resources/Info.plist"
   fi
 
   # README: luật 10 so *tên folder* đầu dòng với đĩa, nên dòng Data/ phải đi khi
   # folder đi. Phần mô tả thì luật không đọc — nhưng một README kể về `Order/`
   # trong repo không có `Order/` dạy sai đúng cái mà luật 10 sinh ra để chặn.
   readme="$kit_root/README.md"
-  perl -pi -e 's|^Features/.*|Features/       một folder là một luồng, không phải một màn|' "$readme"
-  perl -pi -e 's|^App/.*|App/            entry · Navigation · Bootstrap · Resources|'                         "$readme"
-  domain_line='Domain/         Services (port) — protocol mà app định nghĩa, Data đi hiện thực'
+  perl -pi -e 's|^  Features/.*|  Features/       một folder là một luồng, không phải một màn|' "$readme"
+  perl -pi -e 's|^  App/.*|  App/            entry · Navigation · Bootstrap · Resources|'                         "$readme"
+  domain_line='  Domain/         Services (port) — protocol mà app định nghĩa, Data đi hiện thực'
   if $with_auth; then
-    perl -pi -e 's|^App/.*|App/            entry · Navigation · Bootstrap · Session · Resources|'  "$readme"
-    perl -pi -e 's|^Tests/.*|Tests/          CoreTests · DomainTests · DataTests · FeatureTests|'  "$readme"
-    perl -pi -e 's|^Data/.*|Data/           DTO · Network/{Endpoints,Interceptors} · Mapping · Local · Repositories · Testing|' "$readme"
-    perl -pi -e 's|^Features/.*|Features/       Auth/          một folder là một luồng, không phải một màn|' "$readme"
-    domain_line='Domain/         Entities · Repository protocol · Services (port) · UseCase'
+    perl -pi -e 's|^  App/.*|  App/            entry · Navigation · Bootstrap · Session · Resources|'  "$readme"
+    perl -pi -e 's|^MyAppTests/.*|MyAppTests/       CoreTests · DomainTests · DataTests · FeatureTests|'  "$readme"
+    perl -pi -e 's|^  Data/.*|  Data/           DTO · Network/{Endpoints,Interceptors} · Mapping · Local · Repositories · Testing|' "$readme"
+    perl -pi -e 's|^  Features/.*|  Features/       Auth/          một folder là một luồng, không phải một màn|' "$readme"
+    domain_line='  Domain/         Entities · Repository protocol · Services (port) · UseCase'
   elif $with_api; then
-    perl -pi -e 's|^Tests/.*|Tests/          CoreTests · DataTests|' "$readme"
-    perl -pi -e 's|^Data/.*|Data/           Network · Mapping|'      "$readme"
+    perl -pi -e 's|^MyAppTests/.*|MyAppTests/       CoreTests · DataTests|' "$readme"
+    perl -pi -e 's|^  Data/.*|  Data/           Network · Mapping|'      "$readme"
   else
-    domain_line='Domain/         Services (port) — protocol thuần, không framework'
-    perl -pi -e 's|^Tests/.*|Tests/          CoreTests|' "$readme"
-    perl -0pi -e 's|^Data/.*\n||m'                       "$readme"
+    domain_line='  Domain/         Services (port) — protocol thuần, không framework'
+    perl -pi -e 's|^MyAppTests/.*|MyAppTests/       CoreTests|' "$readme"
+    perl -0pi -e 's|^  Data/.*\n||m'                       "$readme"
   fi
-  DOMAIN_LINE="$domain_line" perl -pi -e 's|^Domain/.*|$ENV{DOMAIN_LINE}|' "$readme"
+  DOMAIN_LINE="$domain_line" perl -pi -e 's|^  Domain/.*|$ENV{DOMAIN_LINE}|' "$readme"
 
   # Mục "Có gì trong này" của base kể về slice demo. Trong repo app nó vừa sai vừa
   # là thứ người ta đọc đầu tiên — và `doctor.sh` bắt được nó, vì nó nhắc
@@ -232,7 +245,7 @@ if ! $keep_demo; then
   modifier/component dùng chung: `onFirstAppear`, `alert(_:onDismiss:)`,
   `cardStyle`, `dismissKeyboardOnTap`, `LoadableContent`, `RemoteImage`.
 - **19 ngôn ngữ** đã dựng sẵn, đổi được ngay trong app.
-- **11 luật kiến trúc** + `./tools/verify.sh` (self-test → build → test).
+- **Luật kiến trúc** (`tools/check-arch.sh`) + `./tools/verify.sh` (self-test → build → test).
 BLURB_COMMON
 )"
 
@@ -240,22 +253,22 @@ BLURB_COMMON
     tool) blurb="$blurb$(cat <<'BLURB_TOOL'
 
 
-Chưa có màn nào. `App/RootView.swift` là chỗ bắt đầu.
+Chưa có màn nào. `MyApp/App/RootView.swift` là chỗ bắt đầu.
 BLURB_TOOL
 )" ;;
     api) blurb="$blurb$(cat <<'BLURB_API'
 - **`Data`** — `APIClientFactory` (interceptor có thứ tự), và map lỗi transport
   về `AppError` ở đúng một chỗ.
 
-Chưa có màn nào. `App/RootView.swift` là chỗ bắt đầu.
+Chưa có màn nào. `MyApp/App/RootView.swift` là chỗ bắt đầu.
 BLURB_API
 )" ;;
     auth) blurb="$blurb$(cat <<'BLURB_AUTH'
 - **`Data`** — `APIClientFactory`, refresh token, keychain, map lỗi về `AppError`.
-- **`Features/Auth`** — sign-in đã nối use case, keychain và `SessionController`;
+- **`MyApp/Features/Auth`** — sign-in đã nối use case, keychain và `SessionController`;
   sửa endpoint và DTO cho khớp backend là chạy được.
 
-Màn sau khi đăng nhập là chỗ trống có chủ đích — xem `App/RootView.swift`.
+Màn sau khi đăng nhập là chỗ trống có chủ đích — xem `MyApp/App/RootView.swift`.
 BLURB_AUTH
 )" ;;
   esac
@@ -270,7 +283,7 @@ BLURB_AUTH
   while IFS= read -r key; do
     [[ -n "$key" ]] || continue
     grep -rqF "$key" --include='*.swift' "$kit_root" 2>/dev/null || dead="$dead$key"$'\n'
-  done < <(perl -ne 'print "$1\n" if /^"(.+?)" = /' "$kit_root/App/Resources/en.lproj/Localizable.strings")
+  done < <(perl -ne 'print "$1\n" if /^"(.+?)" = /' "$kit_root/MyApp/App/Resources/en.lproj/Localizable.strings")
 
   if [[ -n "$dead" ]]; then
     while IFS= read -r key; do
@@ -280,7 +293,7 @@ BLURB_AUTH
         my $k = quotemeta $ENV{KEY};
         s{(?:^/\*[^\n]*\*/\n)?^"$k" = "(?:[^"\\]|\\.)*";\n}{}m;
         s/\n{3,}/\n\n/g;
-      ' "$kit_root"/App/Resources/*.lproj/Localizable.strings
+      ' "$kit_root"/MyApp/App/Resources/*.lproj/Localizable.strings
     done <<< "$dead"
     printf 'Đã xoá %s key l10n không còn code nào dùng (× 19 ngôn ngữ)\n' \
       "$(grep -c . <<< "$dead")"
@@ -312,11 +325,19 @@ find "$kit_root" \
   | xargs -0 perl -pi -e "s/\bMyApp/$module_name/g; s/\bcom\.example\.myapp\b/$bundle_id/g; s/\bcom\.example\b/${bundle_id%.*}/g"
 
 perl -pi -e "s/^name: .*/name: $module_name/" "$kit_root/project.yml"
-perl -pi -e "s|<string>$module_name</string>|<string>$app_name</string>|" "$kit_root/App/Resources/Info.plist"
+# Folder source và folder test mang tên target, như project Xcode tạo tay. Lần đổi
+# chữ ở trên đã viết `<Module>/` vào project.yml và README, nên folder phải đi theo
+# ngay — không thì xcodegen không thấy source nào và check-arch không có gì để kiểm.
+if [[ "$module_name" != "MyApp" ]]; then
+  mv "$kit_root/MyApp" "$kit_root/$module_name"
+  [[ -d "$kit_root/MyAppTests" ]] && mv "$kit_root/MyAppTests" "$kit_root/${module_name}Tests"
+fi
+
+perl -pi -e "s|<string>$module_name</string>|<string>$app_name</string>|" "$kit_root/$module_name/App/Resources/Info.plist"
 
 # File entry point mang tên struct; struct vừa đổi thì file phải đi theo.
-if [[ -f "$kit_root/App/MyApp.swift" ]]; then
-  mv "$kit_root/App/MyApp.swift" "$kit_root/App/$module_name.swift"
+if [[ -f "$kit_root/$module_name/App/MyApp.swift" ]]; then
+  mv "$kit_root/$module_name/App/MyApp.swift" "$kit_root/$module_name/App/$module_name.swift"
 fi
 
 # Dọn thứ chỉ có nghĩa trong kit. `HANDOFF.md` là sổ ghi lịch sử của kit — nó vừa bị
@@ -341,7 +362,10 @@ cat <<EOF
 Việc tiếp theo:
   1. ./tools/verify.sh
   2. Cập nhật AGENTS.md — mục App Features và bảng module, để rule khớp source thật.
-  3. Sửa API_BASE_URL cho từng configuration trong project.yml.
 EOF
+# App tool không có base URL nào để sửa — key đã bị gỡ khỏi project.yml và Info.plist.
+if $with_api; then echo "  3. Sửa API_BASE_URL cho từng configuration trong project.yml."; fi
 
-$verify && (cd "$kit_root" && ./tools/verify.sh)
+# `if`, không `&&`: dòng cuối quyết định exit code, và `false && …` trả 1 — script
+# từng báo thất bại sau mỗi lần init thành công mà không có --verify.
+if $verify; then (cd "$kit_root" && ./tools/verify.sh); fi

@@ -35,7 +35,7 @@ Hook `PostToolUse` chỉ generate khi có file `.swift` **mới** — nó không
 | Thêm configuration (QA, Preprod…) | `configs:` → `settings.configs` của target → `schemes:` → fastlane |
 | Thêm package SPM | `packages:` → **một dòng cho mỗi product** ở `dependencies` |
 | Thêm entitlement/capability | file `.entitlements` → `CODE_SIGN_ENTITLEMENTS` |
-| Thêm folder tầng mới | `sources:` → README (luật 10) → cân nhắc luật mới trong `check-arch.sh` |
+| Thêm folder tầng mới | tạo trong `MyApp/` (đã nằm trong `sources:`) → README (luật 10) → cân nhắc luật mới trong `check-arch.sh` |
 
 ## Giá trị build-config: một dây ba mắt
 
@@ -61,6 +61,8 @@ targets:
 
 ```swift
 // 3. Core/AppEnvironment.swift — nơi duy nhất đọc
+//    (key chỉ app có backend mới cần — như API_BASE_URL — đọc ở
+//    Data/Network/AppEnvironment+API.swift, để app tool xoá Data/ là mất theo)
 let flagX = Bundle.main.object(forInfoDictionaryKey: "FEATURE_FLAG_X") as? String == "YES"
 ```
 
@@ -70,7 +72,7 @@ thì `Bundle.main.object(...)` trả `Optional("YES")`; bỏ đúng hai dòng tr
 công, test vẫn xanh, không một warning nào. Code lặng lẽ chạy nhánh mặc định, và
 thứ duy nhất khác đi là một cờ không bao giờ bật ở Release.
 
-`AppEnvironment` assert ở Debug cho `API_BASE_URL` đúng vì lý do đó; cờ mới mà
+`AppEnvironment+API.swift` assert ở Debug cho `API_BASE_URL` đúng vì lý do đó; cờ mới mà
 quan trọng thì làm y như vậy.
 
 **Đọc ở `AppEnvironment`, không đọc rải rác.** Một key thiếu thì hỏng một lần, lúc
@@ -83,7 +85,7 @@ Ba configuration hiện có: `Debug` (debug), `Staging` (release), `Release`
 
 1. `configs:` ở đầu file — khai tên và nó dựa trên debug hay release.
 2. `settings.configs.<Tên>` trong target — **mọi key** mà các config khác có.
-   Thiếu `API_BASE_URL` ở đây thì assert của `AppEnvironment` mới bắt, và chỉ khi
+   Thiếu `API_BASE_URL` ở đây thì assert của `AppEnvironment+API` mới bắt, và chỉ khi
    ai đó chạy đúng config đó.
 3. `schemes:` — không có scheme thì không chọn được trong Xcode lẫn `xcodebuild`.
 4. `fastlane/Fastfile` — `STORE_CONFIGURATION` / `WEB_TEST_CONFIGURATION` là hằng

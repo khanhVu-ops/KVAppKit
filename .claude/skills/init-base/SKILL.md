@@ -13,7 +13,7 @@ description: >-
 Cần tên app, bundle id, **và tier**. Thiếu cái nào thì hỏi, đừng đoán.
 
 1. **Kiểm tra repository trống.** Chỉ tiếp tục khi root chỉ có kit (và có thể có
-   `.git`, `README.md`, `.gitignore`) — không có `App/`, `Packages/`,
+   `.git`, `README.md`, `.gitignore`) — không có `MyApp/`, `App/`, `Packages/`,
    `project.yml`, hay `.xcodeproj`.
 
 2. **Chốt tier — app này có gọi backend không, có đăng nhập không.** Đây là câu
@@ -42,7 +42,10 @@ Cần tên app, bundle id, **và tier**. Thiếu cái nào thì hỏi, đừng �
    Chỉ truyền `--source` / `--ref` khi người dùng yêu cầu version khác.
 
 4. **Đọc output của script** và báo lại: source + ref KVAppBase đã dùng, tier,
-   bundle id, những gì đã đổi tên. Script in cả số key l10n nó xoá vì không còn
+   bundle id, những gì đã đổi tên. Source nằm trong folder mang tên module
+   (`--name "Photo Tool"` → `PhotoTool/` + `PhotoToolTests/`), như project Xcode
+   tạo tay. Tier tool không có `API_BASE_URL`/`USES_STUB_BACKEND` trong
+   `project.yml` lẫn `Info.plist` — đó là chủ đích, không phải thiếu. Script in cả số key l10n nó xoá vì không còn
    code nào dùng — nói con số đó ra, đừng nuốt.
 
 5. Verify ngay: `./tools/verify.sh`. Một base vừa khởi tạo mà không build được là
