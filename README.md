@@ -70,7 +70,7 @@ KVNetworkit và hai build setting `API_BASE_URL`/`USES_STUB_BACKEND` khỏi
 
 `config/base-template.env` pin theo **tag**, không phải `main`: hai người tạo
 project cách nhau một tuần mà lấy hai cây source khác nhau thì không ai tái lập
-được lỗi của ai. Hiện pin `v1.1.0`. Lấy ref khác cho một lần chạy:
+được lỗi của ai. Hiện pin `v1.2.0`. Lấy ref khác cho một lần chạy:
 
 ```bash
 ./tools/init-base.sh --name "My App" --bundle-id com.company.myapp --ref v1.0.0
