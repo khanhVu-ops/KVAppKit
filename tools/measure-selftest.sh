@@ -26,7 +26,7 @@ chmod +x "$tmp/bin/claude"
 
 # Repo app giả, đủ để qua các guard.
 mkdir -p "$tmp/app/.claude/skills/probe"
-touch "$tmp/app/project.yml"
+mkdir -p "$tmp/app/Probe.xcodeproj"
 
 printf 'prompt: một prompt\nexpect: KVRouterKit\nreject: import KVRouter$\n---\n' > "$tmp/probe.cases"
 

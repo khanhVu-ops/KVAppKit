@@ -20,12 +20,12 @@ biết, đừng đoán cho đủ mặt.
 
 Chạy từ root của repo. Các lệnh này đã kiểm trên chính base.
 
-Source nằm trong folder mang tên target (`name:` của `project.yml`), test ở
+Source nằm trong folder mang tên target (trùng tên `.xcodeproj`), test ở
 `<tên>Tests/` — nên bước đầu là vào folder đó. Quét từ root thì `Features/*/` không
 khớp gì, và overview ra một app "chưa có feature nào" trông rất thuyết phục.
 
 ```bash
-app="$(awk '/^name:/ { print $2; exit }' project.yml)"
+app="$(basename "$(ls -d ./*.xcodeproj | head -1)" .xcodeproj)"
 cd "$app"
 
 # Feature và màn hình của nó
@@ -55,10 +55,11 @@ for d in "../${app}Tests"/*/; do printf '%s: ' "$(basename "$d")"; grep -rho 'fu
 
 Thêm hai thứ chỉ đọc được ở file, không quét bằng một dòng:
 
-- **Cấu hình build** (từ root): `grep -nE 'API_BASE_URL|USES_STUB_BACKEND|deploymentTarget' project.yml`
+- **Cấu hình build** (từ root): `grep -nE 'name = (Debug|Staging|Release);|API_BASE_URL|USES_STUB_BACKEND|IPHONEOS_DEPLOYMENT_TARGET|MARKETING_VERSION' *.xcodeproj/project.pbxproj`
   — overview phải nói rõ Debug đang chạy stub hay API thật. App tool không có hai key
   đầu (init-base gỡ chúng cùng `Data/`): ghi "không có backend", đừng ghi "chưa biết".
-- **Version package**: `grep -A2 -E '^  KV' project.yml`.
+- **Version package** — bản thật sự đang resolve, không phải mức tối thiểu:
+  `grep -E '"(identity|version)"' *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
 
 ## Ghi
 

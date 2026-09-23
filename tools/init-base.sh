@@ -68,7 +68,7 @@ fi
 [[ "$bundle_id" =~ ^[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z][a-zA-Z0-9-]*){1,}$ ]] \
   || fail "bundle id không hợp lệ: $bundle_id"
 
-for cmd in git rsync perl; do
+for cmd in git rsync perl python3; do
   command -v "$cmd" >/dev/null || fail "thiếu lệnh: $cmd"
 done
 
@@ -108,7 +108,7 @@ rm -rf "$tmp/base/.git"
 # với cây source, nên giữ README của kit là fail ngay ./tools/verify.sh đầu tiên.
 #
 # `.claude` không bị exclude cả cụm: kit sở hữu skill/agent/command, còn base sở
-# hữu `.claude/settings.json` (hook xcodegen). Cấm cả `.claude` thì hook không bao
+# hữu `.claude/settings.json` (permission). Cấm cả `.claude` thì file đó không bao
 # giờ tới được repo app, mà copy hook sang kit là lại có hai bản để lệch nhau.
 rsync -a \
   --exclude 'AGENTS.md' --exclude 'CLAUDE.md' \
@@ -133,6 +133,45 @@ rsync -a \
 # bằng mắt được; nếu con số này bò lên quá năm sáu, đó là dấu hiệu nên tách hẳn
 # một repo skeleton chứ không vá bằng overlay nữa.
 # ---------------------------------------------------------------------------
+# project.pbxproj là nguồn thật từ khi bỏ XcodeGen — không còn YAML để xoá một dòng.
+# Gỡ một package là gỡ cả chuỗi object trỏ vào nhau: XCRemoteSwiftPackageReference →
+# XCSwiftPackageProductDependency (package = …) → PBXBuildFile (productRef = …), rồi
+# mọi dòng trong danh sách nhắc tới các id đó. Sót một mắt thì Xcode mở project báo
+# "missing package product", còn xcodebuild thì fail — nên lint + build là bước kiểm.
+pbxproj="$kit_root/MyApp.xcodeproj/project.pbxproj"
+pbxproj_remove_package() {
+  PKG="$1" PBX="$pbxproj" RESOLVED="$kit_root/MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved" \
+  python3 - <<'PY'
+import json, os, re
+pkg, path = os.environ["PKG"], os.environ["PBX"]
+s = open(path).read()
+obj = lambda i: re.compile(r"^\t\t%s /\*[^\n]*?\*/ = \{(?:[^\n]*\};\n|\n.*?^\t\t\};\n)" % i, re.M | re.S)
+ref = re.search(r'^\t\t([0-9A-F]{24}) /\* XCRemoteSwiftPackageReference "%s" \*/ = \{' % re.escape(pkg), s, re.M)
+if not ref:
+    raise SystemExit("init-base: không thấy package %s trong project.pbxproj" % pkg)
+ids = {ref.group(1)}
+products = set(re.findall(r"^\t\t([0-9A-F]{24}) /\*[^\n]*\*/ = \{\n\t\t\tisa = XCSwiftPackageProductDependency;\n\t\t\tpackage = %s " % ref.group(1), s, re.M))
+ids |= products
+for p in products:
+    ids |= set(re.findall(r"^\t\t([0-9A-F]{24}) /\*[^\n]*\*/ = \{isa = PBXBuildFile; productRef = %s " % p, s, re.M))
+for i in ids:
+    s = obj(i).sub("", s)
+    s = re.sub(r"^\t+%s /\*[^\n]*\*/,\n" % i, "", s, flags=re.M)
+leftover = [i for i in ids if i in s]
+if leftover:
+    raise SystemExit("init-base: gỡ %s chưa sạch, còn id %s" % (pkg, leftover))
+open(path, "w").write(s)
+# Package.resolved: bỏ pin của package đó. Xcode tự tính lại originHash khi resolve.
+r = os.environ["RESOLVED"]
+if os.path.exists(r):
+    data = json.load(open(r))
+    data["pins"] = [p for p in data.get("pins", []) if p.get("identity") != pkg.lower()]
+    json.dump(data, open(r, "w"), indent=2)
+    open(r, "a").write("\n")
+PY
+  plutil -lint -s "$pbxproj" || fail "project.pbxproj hỏng sau khi gỡ $1"
+}
+
 strip() {
   local path
   for path in "$@"; do rm -rf "$kit_root/$path"; done
@@ -190,19 +229,16 @@ if ! $keep_demo; then
   find "$kit_root"/MyApp/{Core,Domain,Data,DI,DesignSystem,Features,App} "$kit_root/MyAppTests" \
     -type d -empty -delete 2>/dev/null || true
 
-  # project.yml + Info.plist: chỉ tier tool phải sửa — nó là tier duy nhất không
-  # link KVNetworkit và không có backend.
+  # project + Info.plist: chỉ tier tool phải sửa — nó là tier duy nhất không link
+  # KVNetworkit và không có backend.
   #
   # `API_BASE_URL` và `USES_STUB_BACKEND` đi cùng: file đọc chúng
   # (`Data/Network/AppEnvironment+API.swift`) vừa bị xoá cùng Data/, nên để lại key
-  # là để lại một URL `example.com` mà không ai đọc — và người mở project.yml sẽ
-  # tưởng app có backend. Comment ngay trên `USES_STUB_BACKEND` nói về chính key đó,
-  # nên xoá cả khối comment liền trên.
+  # là để lại một URL `example.com` mà không ai đọc — và người mở build settings sẽ
+  # tưởng app có backend.
   if ! $with_api; then
-    perl -0pi -e 's/^  KVNetworkit:\n(?:    .*\n)+//m'          "$kit_root/project.yml"
-    perl -0pi -e 's/^      - package: KVNetworkit\n        product: KVNetworkit\n//mg' "$kit_root/project.yml"
-    perl -0pi -e 's/^ +API_BASE_URL: .*\n//mg'                  "$kit_root/project.yml"
-    perl -0pi -e 's/^(?: +#.*\n)* +USES_STUB_BACKEND: .*\n//mg' "$kit_root/project.yml"
+    pbxproj_remove_package KVNetworkit
+    perl -0pi -e 's/^\t+(?:API_BASE_URL|USES_STUB_BACKEND) = [^\n]*;\n//mg' "$pbxproj"
     perl -0pi -e 's/^\t<key>(?:API_BASE_URL|USES_STUB_BACKEND)<\/key>\n\t<string>.*<\/string>\n//mg' \
       "$kit_root/MyApp/App/Resources/Info.plist"
   fi
@@ -312,26 +348,35 @@ perl -0pi -e 's/<!-- kit-only:start -->.*?<!-- kit-only:end -->\n\n?//s' "$kit_r
 module_name="$(printf '%s' "$app_name" | perl -pe 's/[^A-Za-z0-9]//g')"
 [[ -n "$module_name" ]] || fail "--name phải chứa ít nhất một chữ hoặc số"
 
-# Quét cả repo, không chỉ App/ + project.yml. Bản đầu chỉ đổi hai chỗ đó, nên
-# `@testable import MyApp` trong Tests/ ở lại và test target của repo mới không
-# compile. AGENTS.md và skill cũng nhắc `MyApp.xcodeproj` — rule mô tả sai cây
-# source là cách base project trước đó đã trôi.
+# Quét cả repo, không chỉ App/. Bản đầu chỉ đổi vài chỗ, nên `@testable import MyApp`
+# trong Tests/ ở lại và test target của repo mới không compile. AGENTS.md và skill cũng
+# nhắc `MyApp.xcodeproj` — rule mô tả sai cây source là cách base project trước đó đã trôi.
+#
+# Giờ quét cả **bên trong** `.xcodeproj`: project.pbxproj mang tên target, product,
+# `INFOPLIST_FILE = MyApp/…`, bundle id; scheme mang `BlueprintName` và
+# `container:MyApp.xcodeproj`. Hồi còn XcodeGen thư mục này bị bỏ qua vì nó được sinh
+# lại; giờ nó là nguồn, sót một chỗ là scheme trỏ vào target không tồn tại.
 #
 # `\bMyApp` không có \b ở cuối là có ý: để `MyAppTests` thành `<Module>Tests`.
-find "$kit_root" \
-  \( -name '.git' -o -name '*.xcodeproj' \) -prune -o \
+find "$kit_root" -name '.git' -prune -o \
   -type f \( -name '*.swift' -o -name '*.yml' -o -name '*.plist' -o -name '*.md' \
+             -o -name '*.pbxproj' -o -name '*.xcscheme' -o -name '*.xcworkspacedata' \
              -o -name 'Appfile' -o -name 'Fastfile' \) -print0 \
   | xargs -0 perl -pi -e "s/\bMyApp/$module_name/g; s/\bcom\.example\.myapp\b/$bundle_id/g; s/\bcom\.example\b/${bundle_id%.*}/g"
 
-perl -pi -e "s/^name: .*/name: $module_name/" "$kit_root/project.yml"
-# Folder source và folder test mang tên target, như project Xcode tạo tay. Lần đổi
-# chữ ở trên đã viết `<Module>/` vào project.yml và README, nên folder phải đi theo
-# ngay — không thì xcodegen không thấy source nào và check-arch không có gì để kiểm.
+# Folder source, folder test, project và scheme mang tên target, như project Xcode tạo
+# tay. Lần đổi chữ ở trên đã viết `<Module>` vào bên trong chúng, nên tên file phải đi
+# theo ngay — không thì Xcode mở một project trỏ vào folder không tồn tại.
 if [[ "$module_name" != "MyApp" ]]; then
   mv "$kit_root/MyApp" "$kit_root/$module_name"
   [[ -d "$kit_root/MyAppTests" ]] && mv "$kit_root/MyAppTests" "$kit_root/${module_name}Tests"
+  mv "$kit_root/MyApp.xcodeproj" "$kit_root/$module_name.xcodeproj"
+  for scheme in "$kit_root/$module_name.xcodeproj/xcshareddata/xcschemes"/MyApp*.xcscheme; do
+    [[ -e "$scheme" ]] || continue
+    mv "$scheme" "$(dirname "$scheme")/$(basename "$scheme" | sed "s/^MyApp/$module_name/")"
+  done
 fi
+plutil -lint -s "$kit_root/$module_name.xcodeproj/project.pbxproj" || fail "project.pbxproj hỏng sau khi đổi tên"
 
 perl -pi -e "s|<string>$module_name</string>|<string>$app_name</string>|" "$kit_root/$module_name/App/Resources/Info.plist"
 
@@ -348,8 +393,6 @@ fi
 rm -f  "$kit_root/HANDOFF.md" "$kit_root/.DS_Store" "$kit_root/tools/init-base.sh"
 rm -rf "$kit_root/config"
 
-command -v xcodegen >/dev/null && (cd "$kit_root" && xcodegen generate --quiet) \
-  || echo "xcodegen chưa cài — chạy 'brew install xcodegen' rồi 'xcodegen generate'"
 
 cat <<EOF
 
@@ -363,8 +406,8 @@ Việc tiếp theo:
   1. ./tools/verify.sh
   2. Cập nhật AGENTS.md — mục App Features và bảng module, để rule khớp source thật.
 EOF
-# App tool không có base URL nào để sửa — key đã bị gỡ khỏi project.yml và Info.plist.
-if $with_api; then echo "  3. Sửa API_BASE_URL cho từng configuration trong project.yml."; fi
+# App tool không có base URL nào để sửa — key đã bị gỡ khỏi build settings và Info.plist.
+if $with_api; then echo "  3. Sửa API_BASE_URL cho từng configuration: Xcode → target → Build Settings → User-Defined."; fi
 
 # `if`, không `&&`: dòng cuối quyết định exit code, và `false && …` trả 1 — script
 # từng báo thất bại sau mỗi lần init thành công mà không có --verify.

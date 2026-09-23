@@ -18,7 +18,7 @@ description: >-
 ```
 
 Nó chạy `check-arch.sh` → self-test của chính nó → `check-l10n.sh` → self-test của
-chính nó → `xcodegen generate` → build → test, và fail sớm ở bước đầu tiên sai. Thứ
+chính nó → build → test, và fail sớm ở bước đầu tiên sai. Thứ
 tự đó có lý: luật kiến trúc và localization kiểm trong một giây, build mất một phút.
 
 Hai self-test chạy **cùng** phép kiểm chứ không phải sau nó: một luật im lặng ngừng
@@ -27,16 +27,15 @@ khớp thì tick xanh của nó chứng nhận điều ngược lại, và đó 
 Chạy riêng khi cần khoanh vùng:
 
 ```bash
-./tools/check-arch.sh              # 11 luật phân tầng
+./tools/check-arch.sh              # 13 luật phân tầng
 ./tools/check-arch-selftest.sh     # chứng minh các luật đó vẫn bắt được vi phạm
 ./tools/check-l10n.sh              # text mới đã đủ 19 bản dịch chưa
 ./tools/check-l10n-selftest.sh     # chứng minh phép kiểm l10n còn bắt được
-xcodegen generate                  # sau khi thêm hoặc di chuyển BẤT KỲ file nào
 ```
 
-`xcodegen generate` là bước hay bị quên nhất, và ở layout một target thì nó quan
-trọng hơn: **mọi** file mới, ở bất kỳ folder nào, đều không có trong project cho
-tới khi generate lại. Triệu chứng là "code có đó mà compiler bảo không tìm thấy".
+Không có bước sinh project: folder source là synchronized folder, file mới tự vào
+target. "Code có đó mà compiler bảo không tìm thấy" thì trước tiên xem file có nằm
+**trong** `<App>/` không — file đặt ngoài folder source không thuộc target nào.
 
 `check-arch-selftest.sh` đáng chạy mỗi khi `check-arch.sh` đổi. Một luật im lặng
 ngừng khớp còn tệ hơn không có luật, vì dấu tick xanh lúc đó chứng nhận điều
@@ -82,9 +81,8 @@ xcodebuild -project MyApp.xcodeproj -scheme MyApp \
   phải xử lý tương tự.
 - Build fail ở `conformance ... crosses into main actor-isolated code` → `View +
   Equatable` cần `nonisolated static func ==`.
-- `Unable to find module dependency` cho một product `KV*` → thiếu khai trong
-  `project.yml` — khai product đó ở `dependencies` của target app rồi
-  `xcodegen generate`.
+- `Unable to find module dependency` cho một product `KV*` → product đó chưa được
+  link vào target (package có nhiều product, mỗi cái chọn riêng) — xem `ios-project`.
 
 ## Báo cáo
 

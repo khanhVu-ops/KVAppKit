@@ -78,9 +78,9 @@ perl -pi -e 's/^name: ios-verify$/name: nham-ten/' .claude/skills/ios-verify/SKI
 check "3 · name: khác tên folder"
 cp "$tmp/skillmd" .claude/skills/ios-verify/SKILL.md
 
-# 4 · doc nói một version khác cái project.yml pin
+# 4 · doc nói một version khác cái project pin
 printf '\nKVRouterKit 3.1 là version đang dùng.\n' >> .claude/skills/ios-architecture/references/di.md
-check "4 · version trong doc lệch project.yml"
+check "4 · version trong doc lệch project"
 cp "$tmp/di.md" .claude/skills/ios-architecture/references/di.md
 
 # 5 · doc trỏ vào path không tồn tại
@@ -88,7 +88,7 @@ printf '\nXem `Features/Nope/Missing.swift`.\n' >> .claude/skills/ios-architectu
 check "5 · path trong doc không tồn tại"
 cp "$tmp/di.md" .claude/skills/ios-architecture/references/di.md
 
-# 6 · init-base exclude cả .claude, chặn hook xcodegen tới repo app
+# 6 · init-base exclude cả .claude, chặn settings.json của base tới repo app
 perl -pi -e "s|^(\s*)--exclude '\.claude/skills'.*|\$1--exclude '.claude' \\\\|" tools/init-base.sh
 check "6 · init-base exclude cả .claude"
 cp "$tmp/init-base.sh" tools/init-base.sh

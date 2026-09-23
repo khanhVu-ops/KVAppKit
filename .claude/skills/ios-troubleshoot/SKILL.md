@@ -29,9 +29,9 @@ Ba câu hỏi, theo thứ tự:
 
 | Triệu chứng | Nguyên nhân | Xử |
 |---|---|---|
-| "cannot find X in scope" mà file có trên đĩa | file mới chưa vào project — một app target không tự phát hiện | `xcodegen generate`. Hook `PostToolUse` lo file mới; **di chuyển/xoá thì phải tự chạy** |
+| "cannot find X in scope" mà file có trên đĩa | file nằm **ngoài** `<App>/` (chỉ folder source là synchronized folder), hoặc folder đã bị "Convert to Group" | dời file vào `<App>/`; luật 13 của `check-arch.sh` báo nếu folder thành group thường — Xcode → File Inspector → Convert to Folder |
 | Symbol mới của package `KV*` "không tìm thấy" ngay sau khi bump version | swiftmodule cũ trong DerivedData | xoá DerivedData **rồi** mới tin thông báo lỗi |
-| `Unable to find module dependency` cho một product `KV*` | chưa khai product trong `dependencies` của target | thêm vào `project.yml` rồi `xcodegen generate` |
+| `Unable to find module dependency` cho một product `KV*` | product đó chưa được link vào target — package có nhiều product, mỗi cái chọn riêng | Xcode → target → General → Frameworks, Libraries → `+` đúng product (xem `ios-project`) |
 | `conformance ... crosses into main actor-isolated code` | `View + Equatable` mà `==` bị suy ra là `@MainActor` | `nonisolated static func ==` |
 | Build chậm bất thường, SPM resolve lại từ đầu | vừa xoá DerivedData vô cớ | đừng xoá theo phản xạ; chỉ xoá khi thật sự nghi cache bẩn |
 

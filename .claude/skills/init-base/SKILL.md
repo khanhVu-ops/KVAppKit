@@ -43,9 +43,11 @@ Cần tên app, bundle id, **và tier**. Thiếu cái nào thì hỏi, đừng �
 
 4. **Đọc output của script** và báo lại: source + ref KVAppBase đã dùng, tier,
    bundle id, những gì đã đổi tên. Source nằm trong folder mang tên module
-   (`--name "Photo Tool"` → `PhotoTool/` + `PhotoToolTests/`), như project Xcode
-   tạo tay. Tier tool không có `API_BASE_URL`/`USES_STUB_BACKEND` trong
-   `project.yml` lẫn `Info.plist` — đó là chủ đích, không phải thiếu. Script in cả số key l10n nó xoá vì không còn
+   (`--name "Photo Tool"` → `PhotoTool.xcodeproj` + `PhotoTool/` + `PhotoToolTests/`),
+   như project Xcode tạo tay. Không có XcodeGen: project được commit và mở thẳng
+   bằng Xcode 16+. Tier tool không có package KVNetworkit, và không có
+   `API_BASE_URL`/`USES_STUB_BACKEND` trong build settings lẫn `Info.plist` — đó là
+   chủ đích, không phải thiếu. Script in cả số key l10n nó xoá vì không còn
    code nào dùng — nói con số đó ra, đừng nuốt.
 
 5. Verify ngay: `./tools/verify.sh`. Một base vừa khởi tạo mà không build được là

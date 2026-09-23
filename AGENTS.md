@@ -25,7 +25,7 @@ gone — which is the drift `doctor.sh` check 5 exists to catch.
 | Networking | KVNetworkit 2.x (lives in `Data`, errors mapped at that boundary) |
 | Logging | KVLoggingKit (privacy-declared metadata) |
 | Toast | KVToastKit behind the `ToastService` port |
-| Project files | XcodeGen (`project.yml`) — never edit `.xcodeproj` by hand |
+| Project files | `MyApp.xcodeproj`, committed, edited in Xcode — no XcodeGen. Source folders are Xcode 16 synchronized folders |
 | Language mode | Swift 6, `SWIFT_STRICT_CONCURRENCY: complete` |
 
 ## 2 · Folder layout
@@ -47,8 +47,8 @@ MyAppTests/       CoreTests · DomainTests · DataTests · FeatureTests
 tools/            check-arch.sh · check-arch-selftest.sh · verify.sh
 ```
 
-`MyApp` is the target name (`name:` in `project.yml`); `init-base` renames the two
-folders with it. **Layer paths in these rules and skills — `Features/…`,
+`MyApp` is the target name (and the `.xcodeproj` name); `init-base` renames the
+project and both folders with it. **Layer paths in these rules and skills — `Features/…`,
 `App/Resources/…` — are relative to that source folder**, and `Tests/…` means
 `MyAppTests/…`.
 
@@ -98,9 +98,11 @@ nobody looks at, so it breaks quietly.
 The app declares **19 languages** (en source · ar · zh-Hans · zh-Hant · nl · fr · de ·
 hi · id · it · ja · ko · pt-BR · pt-PT · ru · es · th · tr · vi) as one `.strings` file
 each: `App/Resources/<lang>.lproj/Localizable.strings`. Not a String Catalog — the build
-rewrites those, and flat files diff, merge and hand to a translation vendor. XcodeGen
-derives `knownRegions` from the `.lproj` directories, so adding a language is adding a
-directory.
+rewrites those, and flat files diff, merge and hand to a translation vendor. 
+Adding a language is three places: the `.lproj` directory, `LANGUAGES` in
+`tools/check-l10n.sh`, and the project's Localizations (Xcode → Project → Info) —
+the synchronized folder copies `.lproj` into the bundle but does not add it to
+`knownRegions`.
 
 **Any new user-facing string ships with all 19 translations in the same commit.** Not
 "English for now": a missing translation breaks nothing, fails no test, and logs
@@ -138,7 +140,6 @@ skill for that table, plurals, RTL, and the in-app language switch.
 ## 5 · Commands
 
 ```bash
-xcodegen generate                    # after adding or moving files
 ./tools/check-arch.sh                # layering rules
 ./tools/check-l10n.sh                # new text is translated into all 19 languages
 ./tools/verify.sh                    # all of the above + build + test
@@ -153,17 +154,20 @@ fastlane ios release                 # App Store, not submitted for review
 `verify.sh` runs in CI on every push and PR (`.github/workflows/verify.yml`), so the
 rules above are enforced rather than remembered. Releases are dispatched by hand from
 the Actions tab and build on a self-hosted macOS runner that holds the signing
-certificate — the certificate never leaves that machine. Every lane regenerates the
-project first, because `.xcodeproj` is generated and gitignored, and version lives in
-`project.yml` (`MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`), never in a plist.
+certificate — the certificate never leaves that machine.
 
-Never hand-edit `MyApp.xcodeproj`; it is generated and gitignored.
+**Project.** `MyApp.xcodeproj` is committed and is the source of truth. `MyApp/` and
+`MyAppTests/` are synchronized folders, so creating, moving or deleting a file needs
+no project change at all — and `project.pbxproj` rarely changes, so committing it
+does not breed conflicts. Rule 13 of `check-arch.sh` fails if either folder is turned
+back into a plain group. Anything else (packages, configurations, capabilities) goes
+through Xcode; see skill `ios-project` before editing `project.pbxproj` as text, and
+`plutil -lint` it afterwards.
 
-A `PostToolUse` hook (`.claude/settings.json` → `tools/xcodegen-if-needed.sh`)
-regenerates the project when a **new** `.swift` file appears, and stays silent
-otherwise. It removes the most repeated trap of a single-target layout — a file that
-exists on disk and not in the project, which the compiler reports as "cannot find
-in scope". Moving or deleting files is still on you: run `xcodegen generate`.
+**Version.** `MARKETING_VERSION` (`1.0`, `1.1`, …) lives in the app target's build
+settings and is bumped by hand, then committed. The build number is never edited:
+fastlane sets `CURRENT_PROJECT_VERSION` at build time (latest TestFlight build + 1 for
+store lanes, a timestamp for internal lanes) and does not write it back.
 
 ## 6 · Skills
 

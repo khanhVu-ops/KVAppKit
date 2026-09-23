@@ -26,9 +26,9 @@ hoặc sửa **một màn hình**, đúng chuẩn nhà, không tự sáng chế 
    file, cách chia view con, cách xử lỗi, rồi viết theo đúng giọng đó.
 
 Mọi path tầng ở đây (`Features/…`, `App/…`) tính từ **folder source mang tên
-target** — `name:` trong `project.yml`, ví dụ `MyApp/Features/…`. Glob từ root
+target** — trùng tên `.xcodeproj`, ví dụ `MyApp/Features/…`. Glob từ root
 repo với `Features/**` sẽ không thấy gì.
-4. **Không tự chạy build lâu.** Được `xcodegen generate` và `./tools/check-arch.sh`. Muốn
+4. **Không tự chạy build lâu.** Được `./tools/check-arch.sh` (file mới tự vào target, không cần sinh project). Muốn
    chạy app trên simulator thì báo user hoặc dùng skill `ios-verify`.
 
 ## Bộ file cho một màn

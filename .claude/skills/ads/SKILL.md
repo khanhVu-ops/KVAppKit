@@ -47,12 +47,14 @@ có `remote_config_defaults.plist`, không có lời gọi init nào. Bốn vi�
 
 2. **`pod install`, rồi mở `.xcworkspace`** — không phải `.xcodeproj` nữa.
 
-   > **Bẫy của XcodeGen.** Repo này sinh project từ `project.yml`, và mỗi lần
-   > `xcodegen` chạy là pod integration bị xoá sạch — build lỗi "module not
-   > found" về một pod vẫn đang nằm trong `Pods/`. Sau **mọi** lần regenerate
-   > phải `pod install` lại. Đây là lý do có project đã bỏ XcodeGen hẳn khi thêm
-   > CocoaPods; nếu app sắp có nhiều pod thì cân nhắc bỏ luôn thay vì trả giá này
-   > mỗi ngày.
+   > **Ba chỗ phải theo sang workspace**, vì base giả định không có CocoaPods:
+   > - CocoaPods **≥ 1.16** — project dùng synchronized folder (`objectVersion = 77`),
+   >   bản cũ hơn không đọc được và `pod install` fail.
+   > - `tools/verify.sh` build bằng `-project`; đổi sang `-workspace <App>.xcworkspace`.
+   > - `fastlane/Fastfile`: `build_app(project: …)` → `workspace: "<App>.xcworkspace"`.
+   >
+   > Commit `Podfile` + `Podfile.lock` + `.xcworkspace`; `Pods/` thì tuỳ team, nhưng
+   > chọn một và ghi vào README.
 
 3. **`GoogleService-Info.plist` + `remote_config_defaults.plist`** vào
    `App/Resources/`, và **thêm cả hai vào target**. SDK tự gọi

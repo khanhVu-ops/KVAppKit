@@ -35,8 +35,9 @@ Hai thứ mất đi, nói ra để không tưởng nhầm là được canh:
   Anh"; `check-l10n.sh` chỉ đảm bảo đủ key, đủ ngôn ngữ, không giá trị rỗng.
 - **Plural cần `.stringsdict` riêng** — xem mục Plural bên dưới.
 
-XcodeGen suy `knownRegions` từ chính các thư mục `.lproj`, nên thêm một ngôn ngữ là tạo
-thêm một thư mục; không có chỗ thứ hai khai ngôn ngữ để lệch.
+Thêm một ngôn ngữ là ba chỗ: thư mục `.lproj`, `LANGUAGES` trong `tools/check-l10n.sh`,
+và Localizations của project (Xcode → Project → Info) — synchronized folder copy `.lproj`
+vào bundle nhưng không tự thêm nó vào `knownRegions`.
 
 ## Luật
 
@@ -155,7 +156,7 @@ file chính vì lỗi này không tự lộ ra.
 
 ## Đừng để build tự sinh bảng dịch
 
-`project.yml` giữ `SWIFT_EMIT_LOC_STRINGS: "NO"`. Đây là dấu vết của quãng repo còn dùng
+Build settings của project giữ `SWIFT_EMIT_LOC_STRINGS = NO`. Đây là dấu vết của quãng repo còn dùng
 String Catalog: bật nó thì mỗi lần build, compiler bóc chuỗi vào catalog và làm bẩn đúng
 file mà `check-l10n.sh` vừa kiểm sạch — xanh, build xong, rồi `verify.sh` đỏ ngay sau đó.
 
@@ -231,8 +232,10 @@ Khoảng trống của script không phải là sự cho phép.
 1. Tạo `App/Resources/<code>.lproj/Localizable.strings` với **đủ mọi key** đang có.
 2. Thêm `case` vào `AppLanguage` (picker) và mã đó vào `LANGUAGES` của
    `tools/check-l10n.sh` — script so ba chỗ này với nhau, nên lệch một chỗ là fail.
-3. `xcodegen generate` → `knownRegions` tự cập nhật từ thư mục `.lproj`.
+3. Xcode → Project → Info → Localizations → `+` ngôn ngữ đó (nó ghi vào `knownRegions`
+   trong `project.pbxproj`). Bỏ qua bước này thì app vẫn chạy đúng ngôn ngữ, nhưng
+   Xcode không liệt kê nó và export localization bỏ sót.
 4. `./tools/verify.sh`, rồi mở app bằng ngôn ngữ mới và xem một màn thật.
 
-Bớt một ngôn ngữ thì xoá ở cả ba chỗ. Để lại một thư mục `.lproj` không còn khai là rác —
+Bớt một ngôn ngữ thì xoá ở cả bốn chỗ. Để lại một thư mục `.lproj` không còn khai là rác —
 nó sẽ được ai đó dịch tiếp vì tưởng còn dùng.

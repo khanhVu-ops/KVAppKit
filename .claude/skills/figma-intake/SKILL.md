@@ -121,9 +121,9 @@ mức chữ lớn. Nên map Figma → **text style gần nhất**, đừng map s
 static let titleL = Font.system(.largeTitle, design: .rounded).weight(.bold)
 ```
 
-Font riêng của brand thì cần thêm file font + `UIAppFonts` trong `Info.plist` +
-`project.yml` — base **không** có `UIAppFonts` nào, nên đó là việc của skill
-`ios-project`, không phải sửa tay `Info.plist`. Và khi có custom font thì vẫn phải
+Font riêng của brand thì cần thêm file font (vào folder source là tự vào target) +
+`UIAppFonts` trong `Info.plist` — base **không** có `UIAppFonts` nào; xem skill
+`ios-project` cho phần plist/build settings. Và khi có custom font thì vẫn phải
 đi qua `Font.custom(_:size:relativeTo:)`, không phải `Font.custom(_:size:)`, để
 Dynamic Type sống.
 
@@ -162,8 +162,7 @@ preview nên có đủ variant, vì đó là chỗ designer soi mà không cần
 ```
 
 Luật 6 kiểm không còn color literal ngoài `DesignSystem`; luật 11 kiểm preview.
-File `.swift` mới thì hook đã `xcodegen generate`, nhưng **thêm folder mới trong
-`Assets.xcassets` không phải file Swift** — nếu asset mới không hiện ra thì chạy
-`xcodegen generate` bằng tay.
+File mới — Swift hay asset — trong folder source tự vào target (synchronized folder),
+không cần đụng project.
 
 Bước tiếp theo là `figma-spec`, không phải code màn hình.

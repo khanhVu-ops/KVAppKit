@@ -25,7 +25,7 @@
 #   ---
 #
 # Yêu cầu: `claude` CLI trên PATH, và --in trỏ vào một repo app đã init-base (có
-# .claude/skills + project.yml). Đo trong repo kit thì vô nghĩa: không có source để
+# .claude/skills + một .xcodeproj). Đo trong repo kit thì vô nghĩa: không có source để
 # model bắt chước.
 
 set -uo pipefail
@@ -46,7 +46,7 @@ done
 command -v claude >/dev/null || fail "cần \`claude\` CLI trên PATH"
 [ -n "$target" ] || fail "cần --in <repo app đã init-base>"
 [ -d "$target/.claude/skills" ] || fail "$target không có .claude/skills — chưa init-base?"
-[ -f "$target/project.yml" ] || fail "$target không có project.yml — không phải repo app"
+compgen -G "$target/*.xcodeproj" >/dev/null || fail "$target không có .xcodeproj — không phải repo app"
 
 cases=()
 if $all; then

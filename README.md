@@ -58,8 +58,13 @@ bốn file nằm trong `config/overlays/` chép đè (`RootView`, `AppRoutes`, `
 `AppDeepLink`). Mỗi bản copy trong overlay là một chỗ có thể trôi khỏi base; quá
 năm sáu file là dấu hiệu nên tách hẳn một repo skeleton.
 
-Chỉ dùng cho repo mới. Nó từ chối chạy nếu đã có `App/`, `Packages/`,
+Chỉ dùng cho repo mới. Nó từ chối chạy nếu đã có `MyApp/`, `App/`, `Packages/`,
 `project.yml` hay `.xcodeproj`, để không ghi đè mất code.
+
+Base không dùng XcodeGen: `MyApp.xcodeproj` được commit, và `init-base` đổi tên thẳng
+trong nó (project, target, scheme, bundle id) rồi đổi tên file. Tier tool gỡ package
+KVNetworkit và hai build setting `API_BASE_URL`/`USES_STUB_BACKEND` khỏi
+`project.pbxproj`.
 
 ## Chọn version KVAppBase
 
@@ -85,7 +90,7 @@ project cách nhau một tuần mà lấy hai cây source khác nhau thì không
 | `ios-troubleshoot` | một lệnh vừa fail, hoặc app cư xử lạ |
 | `ios-review` | review diff theo luật của repo |
 | `project-overview` | quét repo, sinh `PROJECT_OVERVIEW.md` |
-| `ios-project` | `project.yml`: configuration, package, entitlement, scheme |
+| `ios-project` | project (Xcode): configuration, package, entitlement, scheme, version |
 | `figma-intake` | design → token + component, **trước khi** code màn nào |
 | `figma-spec` | Figma → feature spec → (duyệt) → test spec → `TASKS.md` |
 | `figma-screen` | một node Figma → một màn SwiftUI, ảnh vector vào asset |
@@ -130,8 +135,8 @@ assert bằng regex. Cột đáng đọc là **"không skill"**: nó fail thì s
 Cả hai cột pass nghĩa là prompt đó không chứng minh được gì. Xem `tools/measure/`.
 
 Mỗi phép kiểm ứng với một lỗi đã xảy ra thật: symlink rơi khỏi git, bản copy script
-lạc hậu trong skill, `name:` lệch tên folder, version trong doc lệch `project.yml`,
-doc trỏ vào file đã xoá, `init-base` chặn hook, doc quảng cáo skill không tồn tại.
+lạc hậu trong skill, `name:` lệch tên folder, version trong doc lệch project,
+doc trỏ vào file đã xoá, `init-base` chặn `.claude/settings.json`, doc quảng cáo skill không tồn tại.
 Chạy nó sau mỗi lần sửa skill — drift ở đây dạy sai cả người lẫn agent trước khi họ
 kịp mở source ra xem.
 

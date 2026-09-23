@@ -121,8 +121,8 @@ Thêm case thứ tư nếu endpoint có cờ ảnh hưởng cache: assert thẳn
 
 ## Xong thì
 
-`./tools/verify.sh`. File mới thì hook đã `xcodegen generate`; nếu chạy Codex hoặc
-sửa ngoài Claude Code thì tự chạy.
+`./tools/verify.sh`. File mới trong folder source tự vào target (synchronized folder),
+không cần đụng project.
 
 Và cập nhật `docs/API_INVENTORY.md` nếu repo có — một endpoint tồn tại mà inventory
 không biết là inventory bắt đầu vô dụng.

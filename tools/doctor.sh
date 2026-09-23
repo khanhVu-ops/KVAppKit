@@ -9,9 +9,9 @@
 #      nên mọi clone thiếu nó trong khi ba file doc khẳng định nó có.
 #   2  `ios-verify/scripts/` giữ bản copy của tools/*.sh, lạc hậu hai luật.
 #   3  skill có `name:` khác tên folder thì runtime không load được như doc nói.
-#   4  AGENTS.md nói KVRouterKit 3.1, bảng nói 3.2.0, project.yml pin 3.2.1.
+#   4  AGENTS.md nói KVRouterKit 3.1, bảng nói 3.2.0, project pin 3.2.1.
 #   5  subagent chỉ vào `FeatureOrder/OrderList/`, folder đã bỏ từ lâu.
-#   6  hook xcodegen không tới được repo app vì init-base exclude cả `.claude`.
+#   6  `.claude/settings.json` của base không tới được repo app vì init-base exclude cả `.claude`.
 #   7  bảng skill trong doc nhắc một skill không tồn tại — và chiều ngược lại, một
 #      skill viết ra rồi mà không bảng nào nhắc, nên không ai biết để gọi.
 #   8  README quảng cáo "7 phép kiểm" khi script đã chạy 8 — cùng loại lỗi mà
@@ -48,9 +48,17 @@ while [ "$#" -gt 0 ]; do
     esac
 done
 
-source_root=""
+# Cây source nhận ra bằng `.xcodeproj` ở gốc (repo đã bỏ XcodeGen, không còn
+# project.yml). Tên project = tên target = tên folder source.
+source_root="" app_name="" pbxproj=""
 for candidate in "$PWD" "$against" "../KVAppBase"; do
-    [ -n "$candidate" ] && [ -f "$candidate/project.yml" ] && { source_root="$candidate"; break; }
+    [ -n "$candidate" ] || continue
+    proj="$(ls -d "$candidate"/*.xcodeproj 2>/dev/null | head -1)"
+    [ -n "$proj" ] && [ -f "$proj/project.pbxproj" ] || continue
+    source_root="$candidate"
+    app_name="$(basename "$proj" .xcodeproj)"
+    pbxproj="$proj/project.pbxproj"
+    break
 done
 
 # ---------------------------------------------------------------------------
@@ -107,15 +115,15 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Version trong doc khớp version project.yml pin.
+# 4. Version trong doc khớp version project pin (minimumVersion trong pbxproj).
 #    Chỉ soi dòng có nhắc tên package, nên "iOS 16.0" hay "Swift 6" không bị lôi vào.
 # ---------------------------------------------------------------------------
 if [ -z "$source_root" ]; then
-    skip "version doc vs project.yml — không thấy project.yml (dùng --against DIR)"
+    skip "version doc vs project — không thấy .xcodeproj (dùng --against DIR)"
 else
     wrong=""
-    packages=$(perl -0ne 'print "$1 $2\n" while /^  (KV\w+):\n(?:.*\n)*?    from: ([\d.]+)/gm' \
-        "$source_root/project.yml")
+    packages=$(perl -0ne 'print "$1 $2\n" while /XCRemoteSwiftPackageReference "(KV\w+)" \*\/ = \{\n(?:[^\n]*\n)*?\t+minimumVersion = ([\d.]+);/g' \
+        "$pbxproj")
     while read -r pkg pinned; do
         [ -n "$pkg" ] || continue
         # Mỗi dòng doc nhắc "<Package><gì đó> <số>.<số>": số đó phải là chính version
@@ -127,15 +135,19 @@ else
                       | head -1 | grep -oE '[0-9]+(\.[0-9]+)+')
             case "$pinned" in
                 "$claimed"|"$claimed".*) ;;
-                *) wrong="$wrong${hit%%:*}: nói $claimed, project.yml pin $pinned"$'\n' ;;
+                *) wrong="$wrong${hit%%:*}: nói $claimed, project pin $pinned"$'\n' ;;
             esac
         done < <(grep -rnE "$pkg[A-Za-z]* [0-9]+\.[0-9]+" --include='*.md' \
                     --exclude=HANDOFF.md . || true)
     done <<< "$packages"
     if [ -n "$wrong" ]; then
-        fail "version trong doc lệch project.yml" "$wrong"
+        fail "version trong doc lệch project" "$wrong"
+    elif [ -z "$packages" ]; then
+        # Regex không khớp package nào thì luật đang pass rỗng — đúng kiểu lỗi mà
+        # mọi self-test ở đây sinh ra để chặn.
+        fail "không đọc được version package nào từ $pbxproj" "format pbxproj đổi? sửa regex ở luật 4"
     else
-        pass "version trong doc khớp project.yml"
+        pass "version trong doc khớp project ($(grep -c . <<< "$packages") package KV)"
     fi
 fi
 
@@ -144,13 +156,12 @@ fi
 #    Bỏ path có placeholder (`<X>`) hoặc glob (`*`) — chúng là mẫu, không phải path.
 # ---------------------------------------------------------------------------
 if [ -z "$source_root" ]; then
-    skip "path trong doc — không thấy project.yml (dùng --against DIR)"
+    skip "path trong doc — không thấy .xcodeproj (dùng --against DIR)"
 else
     missing=""; absent_layer=""
     # Tầng nằm trong folder mang tên target (`MyApp/Features/...`), test trong
     # `MyAppTests/`. Doc viết path tính từ folder source (`Features/...`, `Tests/...`)
     # — AGENTS.md mục 2 khai quy ước đó — nên phải tìm ở đó trước.
-    app_name="$(awk '/^name:/ { print $2; exit }' "$source_root/project.yml")"
     app_dir="$source_root/$app_name"
     while read -r ref; do
         [ -n "$ref" ] || continue
@@ -194,17 +205,17 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 6. Hook xcodegen tới được repo app: init-base không được exclude cả .claude.
+# 6. `.claude/settings.json` của base tới được repo app: init-base không được exclude cả .claude.
 # ---------------------------------------------------------------------------
 # Trong một repo app, `init-base.sh` đã bị chính nó xoá sau khi chạy — không có gì
-# để kiểm, và luật chuyển sang hỏi thẳng cái nó thật sự quan tâm: hook có ở đó không.
+# để kiểm, và luật chuyển sang hỏi thẳng cái nó thật sự quan tâm: file có ở đó không.
 if grep -qE "^\s*--exclude '\.claude'" tools/init-base.sh 2>/dev/null; then
     fail "init-base exclude cả .claude" \
-        "settings.json của base (hook xcodegen) sẽ không tới repo app"
+        "settings.json của base (permission cho tools/) sẽ không tới repo app"
 elif [ -n "$source_root" ] && [ ! -f "$source_root/.claude/settings.json" ]; then
-    fail "base không có .claude/settings.json" "hook xcodegen chưa được khai ở đâu"
+    fail "base không có .claude/settings.json" "permission cho tools/ chưa được khai ở đâu"
 else
-    pass "hook xcodegen đi được từ base sang repo app"
+    pass ".claude/settings.json đi được từ base sang repo app"
 fi
 
 # ---------------------------------------------------------------------------

@@ -79,8 +79,8 @@ mode. Illustration nhiều màu thì bỏ dòng đó.
 Ảnh **từ URL** (ảnh sản phẩm, avatar) thì không phải asset: dùng `RemoteImage`
 (Kingfisher) — `AsyncImage` không cache xuống đĩa và tải lại mỗi lần cell cuộn qua.
 
-Thêm imageset **không phải là thêm file `.swift`**, nên hook `PostToolUse` không
-chạy. Ảnh không hiện ra thì `xcodegen generate` bằng tay.
+Imageset nằm trong `Assets.xcassets` của folder source nên tự vào bundle — không cần
+đụng project. Ảnh không hiện ra thì kiểm tên trong `Image("…")` khớp tên imageset.
 
 ## Dựng view
 
