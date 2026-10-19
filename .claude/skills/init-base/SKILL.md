@@ -41,6 +41,11 @@ Cần tên app, bundle id, **và tier**. Thiếu cái nào thì hỏi, đừng �
    ```
    Chỉ truyền `--source` / `--ref` khi người dùng yêu cầu version khác.
 
+   App cá nhân (team Van Khanh Vu, `W3274W2Y83`, bundle id `com.khanhvu.*`) thêm
+   `--xcode-cloud`: cài `ci_scripts/` cho Xcode Cloud, điền team, xoá fastlane và
+   workflow self-hosted của template. Không chắc app thuộc team nào thì **hỏi**: app
+   công ty vẫn dùng fastlane. Bước bấm trong Xcode sau đó: `xcode-cloud/README.md`.
+
 4. **Đọc output của script** và báo lại: source + ref KVAppBase đã dùng, tier,
    bundle id, những gì đã đổi tên. Source nằm trong folder mang tên module
    (`--name "Photo Tool"` → `PhotoTool.xcodeproj` + `PhotoTool/` + `PhotoToolTests/`),

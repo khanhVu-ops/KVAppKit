@@ -30,6 +30,10 @@ Hoặc chạy thẳng:
 ./tools/init-base.sh --name "My App" --bundle-id com.company.myapp --with-auth --verify
 ```
 
+App cá nhân (team Van Khanh Vu) thêm `--xcode-cloud` để có sẵn CI Xcode Cloud thay
+fastlane; app đã có thì chạy `xcode-cloud/install.sh <repo-app>`. Xem
+[xcode-cloud/README.md](xcode-cloud/README.md).
+
 Script sẽ: kéo KVAppBase theo ref đã pin → copy source vào → **cắt về đúng tier**
 → đổi tên module, bundle id, tên app → giữ nguyên `AGENTS.md`, `CLAUDE.md` và
 toàn bộ skill của kit → báo rõ source/ref đã dùng.
@@ -114,6 +118,7 @@ tools/init-base.sh     script khởi tạo
 tools/doctor.sh        kiểm rule/skill còn nói đúng sự thật
 config/                repository + version KVAppBase
 config/overlays/       bốn file mà mỗi tier cần một bản khác nhau
+xcode-cloud/           CI Xcode Cloud cho app cá nhân (thay fastlane), cài bằng install.sh
 ```
 
 ## Kiểm sức khoẻ của kit

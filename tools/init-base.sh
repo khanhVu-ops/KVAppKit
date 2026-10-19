@@ -18,6 +18,8 @@ Usage: ./tools/init-base.sh --name "App Name" --bundle-id com.company.app [optio
   --source URL   Repository KVAppBase khác.
   --ref REF      Branch hoặc tag khác.
   --verify       Chạy tools/verify.sh sau khi khởi tạo.
+  --xcode-cloud  App cá nhân (team Van Khanh Vu): cài ci_scripts cho Xcode Cloud và
+                 xoá fastlane + workflow self-hosted của template. Xem xcode-cloud/README.md.
   --help
 
 Không cờ nào = app tool: không network, không đăng nhập. Đó là mặc định vì nó là
@@ -34,7 +36,7 @@ config="$kit_root/config/base-template.env"
 # shellcheck disable=SC1090
 source "$config"
 
-app_name=""; bundle_id=""; verify=false
+app_name=""; bundle_id=""; verify=false; xcode_cloud=false
 with_api=false; with_auth=false; keep_demo=false
 source_repo="${KVAPP_BASE_REPOSITORY:-}"; base_ref="${KVAPP_BASE_REF:-}"
 
@@ -48,6 +50,7 @@ while [[ $# -gt 0 ]]; do
     --source)    source_repo="${2:-}"; shift 2 ;;
     --ref)       base_ref="${2:-}"; shift 2 ;;
     --verify)    verify=true; shift ;;
+    --xcode-cloud) xcode_cloud=true; shift ;;
     --help)      usage; exit 0 ;;
     *)           fail "tham số lạ: $1" ;;
   esac
@@ -392,6 +395,14 @@ fi
 # này sẽ tự từ chối chạy lần hai.
 rm -f  "$kit_root/HANDOFF.md" "$kit_root/.DS_Store" "$kit_root/tools/init-base.sh"
 rm -rf "$kit_root/config"
+
+# Xcode Cloud thay fastlane cho app cá nhân. Chạy sau khi đã xoá config/ và init-base.sh:
+# install.sh từ chối chạy trên chính repo kit, và nhận ra kit qua đúng hai thứ đó.
+# `xcode-cloud/` là công cụ của kit như config/, nên cũng không ở lại repo app.
+if $xcode_cloud; then
+  "$kit_root/xcode-cloud/install.sh" "$kit_root" --remove-fastlane
+fi
+rm -rf "$kit_root/xcode-cloud"
 
 
 cat <<EOF
