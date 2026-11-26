@@ -101,22 +101,25 @@ Ráp theo thứ tự này, vì nó cũng là thứ tự dễ sửa nhất khi de
 Text đang gõ giữ ở `@State` cục bộ trong view con, commit lên ViewModel có debounce
 bằng `.task(id:)`. Đẩy từng ký tự lên ViewModel là rebuild cả màn mỗi phím.
 
-## Kiểm bằng mắt, không chỉ bằng test
+## Kiểm bằng mắt, không chỉ bằng test (DQA)
 
-Test xanh không chứng minh màn hình giống design. Sau khi build:
+Test xanh không chứng minh màn hình giống design. Luật DQA-00…03 trong `AGENTS.md`:
 
-```bash
-./tools/verify.sh
-```
+1. **Trước dòng UI đầu tiên** đã có `get_screenshot` **và** `get_design_context` của
+   đúng node (DQA-00). Ảnh đó là ảnh đối chiếu luôn.
+2. Build (`./tools/verify.sh`), mở app trên simulator (skill `ios-verify`), chụp
+   **đúng màn vừa dựng, một device, một lần mỗi vòng** (DQA-02) — dùng simulator đang
+   boot, không boot thêm.
+3. Đặt cạnh ảnh Figma và soi: thứ tự khối, spacing, bo góc, cỡ/độ đậm chữ, màu theo vai
+   trò, **icon đúng icon Figma** (DS-01, không SF Symbol), trạng thái control, safe area,
+   chuỗi đã qua bảng dịch, **vùng chạm** (DS-03: bấm mép icon nhỏ phải ăn, không kích
+   nhầm nút bên cạnh; `Button` + `.buttonStyle(.plain)` trong `List` cần
+   `.contentShape(Rectangle())`), và **vuốt back** (NAV-03: iOS 26 vuốt từ giữa màn).
+4. Lệch thì sửa token hoặc sửa view — đừng nhét một con số lẻ — rồi **chụp lại**, lặp
+   tới khi khớp.
 
-rồi mở app trên simulator (skill `ios-verify`) và soi đúng màn vừa dựng, tối thiểu
-bốn thứ: **light + dark**, **cỡ chữ lớn nhất**, **vùng chạm** (bấm thật vào từng
-row/nút — `Button` + `.buttonStyle(.plain)` trong `List` mất vùng chạm cả ô nếu
-thiếu `.contentShape(Rectangle())`), và **một ngôn ngữ khác** để thấy chuỗi đã đi
-qua bảng dịch.
-
-So với node Figma bằng screenshot cạnh nhau. Lệch spacing thì sửa token hoặc sửa
-view — đừng nhét một con số lẻ vào một chỗ.
+Dark mode, cỡ chữ lớn nhất và ngôn ngữ khác thì xem bằng `#Preview` (rẻ, không cần
+chạy app) chứ không chụp hàng loạt trên simulator; máy thật để người review.
 
 ## Xong thì
 

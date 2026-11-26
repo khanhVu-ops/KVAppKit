@@ -1,7 +1,7 @@
 ---
 name: kv-packages
 description: >-
-  API đúng và các bẫy đã kiểm chứng của 5 package nội bộ: KVRouterKit 3.5 (điều
+  API đúng và các bẫy đã kiểm chứng của 5 package nội bộ: KVRouterKit 3.8 (điều
   hướng + transition), KVDIKit (dependency injection), KVNetworkit 2.x
   (networking async/await), KVToastKit (toast), KVLoggingKit (log + network
   console). Dùng skill này NGAY khi code chạm tới bất kỳ symbol bắt đầu bằng KV,
@@ -33,7 +33,7 @@ description: >-
 
 | Package | Version | Module import |
 |---|---|---|
-| KVRouter | 3.5.0 | `KVRouterKit` · `KVRouterCore` · `KVRouterTesting` |
+| KVRouter | 3.8.2 | `KVRouterKit` · `KVRouterCore` · `KVRouterTesting` |
 | KVNetworkit | 2.0.0 | `KVNetworkit` |
 | KVDIKit | 1.0.0 | `KVDIKit` |
 | KVToastKit | 1.0.0 | `KVToastKit` |

@@ -20,7 +20,7 @@ gone — which is the drift `doctor.sh` check 5 exists to catch.
 |---|---|
 | UI | SwiftUI, iOS 16+ |
 | State | `ObservableObject` + one `State` struct + `send(_ action:)` |
-| Navigation | KVRouterKit 3.5 (`KVRouting` port for ViewModels) |
+| Navigation | KVRouterKit 3.8 (`KVRouting` port for ViewModels) |
 | DI | KVDIKit (keys declared only in `DI/`) |
 | Networking | KVNetworkit 2.x (lives in `Data`, errors mapped at that boundary) |
 | Logging | KVLoggingKit (privacy-declared metadata) |
@@ -122,6 +122,133 @@ against the *device* language, so text built that way keeps the system language 
 the user picks another one in the app — measured on a simulator, and the reason
 `check-l10n.sh` refuses both outside the one bridge that needs them. Load the `ios-l10n`
 skill for that table, plurals, RTL, and the in-app language switch.
+
+## 3c · Screen, design and platform rules
+
+Ported from the VarMeta iOSCodeBase rule set and adapted to this stack. Cite them by
+ID in review. Each one exists because it was broken once and nobody noticed.
+
+### Navigation
+
+- **NAV-03 — Every pushed screen can be swiped back.**
+  - **iOS 26+: from anywhere on the screen**, not only the edge — that is the
+    system gesture (`interactiveContentPopGestureRecognizer`), and users expect it
+    everywhere. **iOS < 26:** from the leading edge.
+  - `.system` screens get this from UIKit through KVRouterKit ≥ 3.6.1, which keeps
+    the swipe alive when the bar is hidden. Screens on the router's own transitions
+    (zoom, pageTurn, custom) get it from `AppNavigation.popEdgeWidth`, passed to
+    `KVRouterHost`: full width on iOS 26+, 44pt before. Do not narrow it per app.
+  - A screen that draws its own header hides the bar with
+    `.toolbar(.hidden, for: .navigationBar)`. **Forbidden:**
+    `.navigationBarBackButtonHidden(true)`, touching `interactivePopGestureRecognizer`
+    / `interactiveContentPopGestureRecognizer`, `interactivePopEnabled: false`, a
+    root-level `DragGesture` that starts on the leading side, and
+    `.interactiveDismissDisabled(true)` on a router transition unless the screen
+    has a written reason. `check-arch.sh` rule 14 catches the first three.
+  - A screen that genuinely must not go back (payment in flight, recording) refuses
+    in a middleware's `willPop(from:to:)`, or carries `nav03-exempt: <reason>` on
+    the offending line.
+  - Horizontal content (paged `TabView`, carousels, sliders) competes with the
+    content swipe on iOS 26: test the back swipe **on top of** it in DQA.
+  - DQA: swipe back on the simulator from the middle of the screen (iOS 26) and
+    from x ≤ 4pt (iOS < 26). A swipe starting at x = 8 not popping on iOS < 26 is
+    UIKit, not a bug.
+
+### Screen behaviour
+
+- **STATE-01 — Load on first appear only.** Initial load goes through
+  `.onFirstAppear` (or `.task` guarded by `state.content == .idle`): `.task` re-runs
+  every time the user comes back, which flashes a spinner, loses the scroll position
+  and spends API calls. Refreshing is an explicit action (`.refresh`, pull-to-refresh,
+  retry). A cancelled load returns to `.idle` and shows nothing.
+- **STATE-02 — Writes are optimistic.** Toggle / edit / delete: (1) change `state`
+  now, (2) call the repository, (3) on failure roll back **only that element on the
+  current state** and surface the error. Never restore a snapshot of the whole
+  collection taken before the `await` — anything the user did meanwhile is lost.
+- **CONC-01 — Repositories and use cases are off the main actor.** Do not mark them
+  `@MainActor`; they are `Sendable` structs or actors. Heavy work (decode, image
+  processing, file IO) runs in `nonisolated` code. If a project turns on
+  `NonisolatedNonsendingByDefault` / approachable concurrency, `nonisolated async`
+  then runs on the caller's actor — mark those functions `@concurrent`.
+
+### Permissions
+
+- **PERM-01 — Ask with the system dialog only.** Call the framework's request API
+  (`CLLocationManager.requestWhenInUseAuthorization`, `AVCaptureDevice.requestAccess`,
+  `PHPhotoLibrary.requestAuthorization(for:)`, `UNUserNotificationCenter…`). No
+  home-made "allow access?" pre-prompt before it. The reason the user reads is the
+  `NS…UsageDescription` string in `Info.plist`, localized in every language.
+- **PERM-02 — Denied is a state, not a popup.** iOS will not ask twice. The screen
+  shows an inline explanation and a button to `UIApplication.openSettingsURLString`.
+
+### Design system
+
+- **DS-01 — Icons are the Figma icons.** Export the exact node as SVG and add it to
+  `Assets.xcassets` as a vector (PDF/SVG, single scale, "Preserve Vector Data").
+  **Never** swap in an SF Symbol because it looks close. The only exception is system
+  chrome iOS draws itself (share sheet, `DatePicker`, menus). Tint by role with
+  `AppColor`, not a colour baked into the file.
+- **DS-02 — Lightest format that is still sharp.** Vector → PDF/SVG. Opaque photo or
+  background → JPEG ~80 %. Raster with transparency → compressed PNG (`pngquant`) or
+  HEIC with alpha. Export `@2x` + `@3x` at the real on-screen size, never `@1x`, never
+  larger than `@3x`. Large raster image sets use Compression = Lossy unless DQA shows
+  banding. An asset over ~500 KB needs a reason; video/large media go to Remote
+  Config / CDN, not the bundle. Bulk work: the global ios-app-size skill
+  (~/.claude/skills, not part of this kit). Never crop a
+  screenshot into an asset.
+- **DS-03 — Touch targets are ≥ 44×44pt when there is room.** Put `.tapTarget()` on
+  the **label** of a `Button`: the visible size stays as in Figma, the hit area grows
+  to `AppSize.minTapTarget` and shrinks to whatever the parent offers, but never below
+  the control. **Forbidden:** growing the hit area beyond the layout (negative-inset
+  `contentShape`, negative padding, oversized transparent overlay) — two neighbours
+  split the gap, neither takes the other's. If the larger frame shifts the layout,
+  reduce the surrounding spacing. Tappable rows use `.contentShape(.rect)`.
+
+### Design QA — a screen is not done when it compiles
+
+- **DQA-00 — Before the first line of UI**, read the exact Figma frame twice:
+  `get_screenshot` (the picture) and `get_design_context` (layout, spacing, colour,
+  text) by `nodeId`. Code from both. If Figma MCP is down, use the other Figma MCP
+  (figma-web or AppSpec `get_design_context`); never guess values.
+- **DQA-01 — After implementing**, build, run on the simulator, screenshot the real
+  screen and compare it side by side with the Figma screenshot: block order,
+  spacing, radius, font size/weight, colour role, icons, control states, safe area,
+  localized text, touch targets (DS-03), back swipe (NAV-03). Fix, screenshot again,
+  repeat until it matches. Skill `ios-verify` drives the simulator.
+- **DQA-02 — One device, one capture per round.** Use the simulator already booted;
+  boot one only if none is. Small devices, dark mode and large Dynamic Type are for
+  the human reviewer on a real device, not a batch of screenshots.
+- **DQA-03 — Deliberate deviations are written down** (e.g. a hit area below 44pt
+  because the parent has no room) in the feature's spec, not left for review to find.
+
+### Monetisation and crash reporting
+
+- **IAA-01 — Ads come straight from VTMonetSDK.** No wrapper service around ad views
+  or managers, no `if premium / if loaded / if every N taps` around them — the SDK
+  owns that logic and Remote Config changes it. Rewarded ads listen to the SDK's own
+  callbacks; do not invent ready/timeout/double-tap handling. Details: skill `ads`.
+- **IAA-02 — SDK-owned screens draw their own ads.** Never add a second banner of the
+  same placement inside an SDK screen's content (the splash already renders
+  `splash_ban`) — two slots stack, content jumps, the ad covers the logo.
+- **CRASH-01 — With Firebase, ship dSYMs.** A repo with `GoogleService-Info.plist`
+  has Crashlytics and a last Run Script phase `"${PODS_ROOT}/FirebaseCrashlytics/run"`
+  (SPM: `${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run`),
+  "Based on dependency analysis" off, Release `DEBUG_INFORMATION_FORMAT =
+  dwarf-with-dsym`. `GoogleService-Info.plist` **is committed** (it is not a secret);
+  signing keys (`.p8`, `.p12`, profiles, `.env`) never are. A plist whose `BUNDLE_ID`
+  differs from the target's: tell the user, do not change the bundle id yourself.
+
+### Build output and progress
+
+- **BUILD-01 — Build products stay out of the repo.** No `-derivedDataPath` inside the
+  project (`build/`, `.build/`, `DerivedData/`); default DerivedData, or a folder under
+  `$TMPDIR` when agents build in parallel. Logs and screenshots go to `$TMPDIR` or
+  the agent scratchpad, never committed.
+- **DOC-01 — Work in progress is written down.** Starting a feature or a behaviour
+  change: update `docs/FEATURE_SPEC.md` / `docs/FEATURE_TEST_SPEC.md` (skill
+  `figma-spec`) and the feature's row in `docs/TASKS.md` (`In progress`), *before*
+  code. Tick tasks as they land; when the plan changes, edit it with a one-line
+  reason. A feature is not "done" until its row says so.
 
 ## 4 · State, action, navigation
 

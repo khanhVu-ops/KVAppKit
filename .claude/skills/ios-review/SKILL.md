@@ -64,6 +64,16 @@ Cùng họ với nó:
 - `catch` bắt rồi bỏ, hoặc map về `.unknown` khiến người dùng thấy chuỗi hệ thống.
 - Route mới có case nhưng chưa ai push tới.
 
+Luật màn hình ở `AGENTS.md` mục 3c, script không bắt hết — soi tay:
+
+- **NAV-03**: màn mới có tự tắt back swipe không (`DragGesture` toàn màn, carousel
+  ngang chiếm cả màn, `.interactiveDismissDisabled(true)` không lý do).
+- **STATE-01/02**: tải lại mỗi lần quay về màn; rollback bằng bản chụp cả mảng.
+- **PERM-01/02**: popup xin quyền tự chế; từ chối quyền mà không có trạng thái + nút Settings.
+- **DS-01/02/03**: SF Symbol thay icon Figma; PNG cho ảnh đục; nút icon không `.tapTarget()`
+  hoặc vùng chạm tràn layout.
+- **IAA-01**: wrapper hay `if` quanh ad của VTMonetSDK.
+
 ## Báo cáo
 
 Mỗi finding một dòng, xếp nặng trước nhẹ sau:

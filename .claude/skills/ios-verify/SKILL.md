@@ -27,7 +27,7 @@ khớp thì tick xanh của nó chứng nhận điều ngược lại, và đó 
 Chạy riêng khi cần khoanh vùng:
 
 ```bash
-./tools/check-arch.sh              # 13 luật phân tầng
+./tools/check-arch.sh              # 14 luật phân tầng
 ./tools/check-arch-selftest.sh     # chứng minh các luật đó vẫn bắt được vi phạm
 ./tools/check-l10n.sh              # text mới đã đủ 19 bản dịch chưa
 ./tools/check-l10n-selftest.sh     # chứng minh phép kiểm l10n còn bắt được

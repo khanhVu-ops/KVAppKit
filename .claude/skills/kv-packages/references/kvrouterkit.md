@@ -1,4 +1,4 @@
-# KVRouterKit 3.5
+# KVRouterKit 3.8
 
 Ba product, và việc chọn đúng product là cách ép kiến trúc bằng compiler:
 
@@ -43,6 +43,9 @@ Hai tham số của host về back-swipe, đều đọc lại mỗi lần đổi
 |---|---|
 | `interactivePopEnabled:` | `false` = tắt hẳn back-swipe. Router giữ recognizer của UIKit lúc đang attach, nên tự set `isEnabled = false` không ăn — đây là đường được hỗ trợ. Từ chối theo từng màn thì dùng `willPop(from:to:)` của middleware. |
 | `interactivePopEdgeWidth:` (3.5.0) | Bề rộng vùng bắt swipe, mặc định 44pt. **Chỉ áp dụng cho màn dùng transition riêng của router** — `.system` và native zoom do UIKit vuốt, vùng đó là chuyện của UIKit. Đánh đổi: recognizer giờ là pan thường nên không được UIKit delay touch, content sát mép trái (row cuộn ngang, slider) có thể tranh chấp — nới/thu tham số này là van xả. |
+| `.interactiveDismissDisabled(_:)` (3.8.0, trên `KVNavigationTransition`) | Màn push bằng transition đó không vuốt back được — chỉ `pop()` từ code. Trái NAV-03: chỉ dùng khi màn có lý do ghi rõ (`nav03-exempt:`). |
+
+**Back swipe và iOS 26 (NAV-03).** iOS 26 có thêm `interactiveContentPopGestureRecognizer` — vuốt back từ **bất kỳ đâu** trên màn. Từ 3.6.1 router bọc delegate của cả hai recognizer hệ thống (`KVSystemPopGestureDelegate`) nên màn `.system` vẫn vuốt được khi ẩn bar bằng `.toolbar(.hidden, for: .navigationBar)` (UIKit tự từ chối trong trường hợp đó — đo trên iOS 26.2). Màn transition riêng dùng pan của router, vùng bắt = `interactivePopEdgeWidth`; app truyền `AppNavigation.popEdgeWidth` (cả màn trên iOS 26+, 44pt trước đó) để hai loại màn cùng một cảm giác. Đừng tự set `isEnabled`/`delegate` của recognizer — router giữ chúng.
 
 - `@ViewBuilder`, view cụ thể, **không** `AnyView` ở call site.
 - Nhiều route type song song → mỗi feature module tự đăng ký.
