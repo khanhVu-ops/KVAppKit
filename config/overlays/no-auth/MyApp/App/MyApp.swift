@@ -65,7 +65,13 @@ struct MyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            KVRouterHost(router: router, defaultTransition: .system) {
+            // NAV-03: back swipe phải chạy ở mọi màn. iOS 26+ vuốt từ bất kỳ đâu trên màn
+            // (màn `.system` do UIKit lo; màn transition riêng nhờ vùng bắt rộng cả màn).
+            KVRouterHost(
+                router: router,
+                defaultTransition: .system,
+                interactivePopEdgeWidth: AppNavigation.popEdgeWidth
+            ) {
                 RootView()
             }
             .appRoutes()
